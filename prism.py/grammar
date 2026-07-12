@@ -1,0 +1,8 @@
+# grammar for parser
+
+
+# declararion
+
+# set -> identifier -> to -> value -> semicolon
+
+# say() -> say -> ( -> identifier -> ) -> ssmicolon

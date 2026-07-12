@@ -1,0 +1,4 @@
+set age to 18;
+set score to 95;
+say(age);
+say(score);

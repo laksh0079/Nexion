@@ -1,0 +1,42 @@
+class Expressions:
+    pass
+
+
+class NumberLiteral(Expressions):
+    def __init__(self, number):
+        self.number = number
+    def __repr__(self):
+        return f"Number: {self.number}"
+
+
+class StringLiteral(Expressions):
+    def __init__(self, string):
+        self.string = string
+    def __repr__(self):
+        return f"String: {self.string}"
+
+class Identifier(Expressions):
+    def __init__(self, name):
+       self.name = name
+    def __repr__(self):
+        return f"Identifier: {self.name}"
+
+class BinaryExpression(Expressions):
+    def __init__(self, left, root, right):
+        self.left = left
+        self.root = root
+        self.right = right
+    def __repr__(self):
+        return f"Left: {self.left}, Mid: {self.root}, Right: {self.right}"
+
+class BooleanLiteral(Expressions):
+    def __init__(self, value):
+        self.value = value
+    def __repr__(self):
+        return f"Boolean: {self.value}"
+class UnaryExpression(Expressions):
+    def __init__(self, operator, operand):
+        self.operator = operator
+        self.operand = operand
+    def __repr__(self):
+        return f"Unary: Operator: {self.operator}, Operand: {self.operand}"

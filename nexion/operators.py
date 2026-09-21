@@ -8,7 +8,9 @@ OPERATORS = {
     "<": "LESS",
     "<=": "LESS_EQUAL",
     "==": "EQUAL",
-    "!=": "NOT_EQUAL"
+    "!=": "NOT_EQUAL",
+    "=": "ASSIGN",
+    "%": "MODULO"
 }
 PRECEDENCE = {
     "or": 70,
@@ -23,16 +25,18 @@ PRECEDENCE = {
     "+": 95,
     "-": 95,
     "*": 100,
-    "/": 100
+    "/": 100,
+    "%": 100
 }
 
-BINARY_OPERATORS = {"PLUS", "MINUS", "MULTIPLICATION", "DIVISION", "LESS", "GREATER", "LESS_EQUAL", "GREATER_EQUAL", "EQUAL", "NOT_EQUAL", "AND", "OR"}
+BINARY_OPERATORS = {"PLUS", "MINUS", "MULTIPLICATION", "DIVISION", "LESS", "GREATER", "LESS_EQUAL", "GREATER_EQUAL", "EQUAL", "NOT_EQUAL", "AND", "OR", "MODULO"}
 
 OPERATOR_BEHAVIOUR = {
     "+": lambda a, b: a + b,
     "-": lambda a, b: a - b,
     "*": lambda a, b: a * b,
     "/": lambda a, b: a / b,
+    "%": lambda a, b: a % b,
     ">": lambda a, b: a > b,
     ">=": lambda a, b: a >= b,
     "<": lambda a, b: a < b,
@@ -47,4 +51,4 @@ UNARY_BEHAVIOUR = {
     "not": lambda operand: not operand
 }
 
-OPERATOR_STARTS = {"+","-","*","/",">","<","!","="}
+OPERATOR_STARTS = {"+","-","*","/",">","<","!","=","%"}

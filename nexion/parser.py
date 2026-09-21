@@ -1,11 +1,11 @@
-from AST.statements import SetStatement, SayStatement
+from AST.statements import LetStatement, AssignStatement, SayStatement, IfStatement, Block, WhileStatement, ExitStatement, NextStatement, Function, FunCall
 from AST.program import Program
 from AST.expressions import NumberLiteral, StringLiteral, Identifier, BinaryExpression, BooleanLiteral, UnaryExpression
 from operators import PRECEDENCE,BINARY_OPERATORS
 class Parser:
     def __init__(self, tokens):
         self.tokens = tokens
-        self.current = 0
+        self.position = 0
         self.statements=[]
         self.valid_expr_start = [
             "LEFT_PAREN",
@@ -16,130 +16,323 @@ class Parser:
             "FALSE",
             "NOT"
         ]
+    
+    def is_eof(self):
+        return self.position >= len(self.tokens)
+        
+    def advance(self):
+        self.position += 1
+        
+    def peek(self):
+        if self.position + 1 >= len(self.tokens):
+            return None
+        return self.tokens[self.position + 1]
+    def current(self):
+        return self.tokens[self.position]
+        
+    def expect(self, *expected):
+        return self.current().type in expected
     def parse_primary(self):
-        if self.tokens[self.current][0] == "NUMBER":
-            value = self.tokens[self.current][1]
-            self.current+=1
+        if self.expect("NUMBER"):
+            value = self.current().value
+            self.advance()
             return NumberLiteral(value)
-        elif self.tokens[self.current][0] == "NOT":
-            self.current +=1
+        elif self.expect("NOT"):
+            self.advance()
             operand = self.parse_primary()
             return UnaryExpression("not", operand)
-        elif self.tokens[self.current][0] == "STRING":
-            value = self.tokens[self.current][1]
-            self.current+=1
+        elif self.expect("STRING"):
+            value = self.current().value
+            self.advance()
             return StringLiteral(value)
-        elif self.tokens[self.current][0] == "IDENTIFIER":
-            value = self.tokens[self.current][1]
-            self.current+=1
+        elif self.expect("IDENTIFIER"):
+            value = self.current().value
+            self.advance()
             return Identifier(value)
-        elif self.tokens[self.current][0] in ["TRUE", "FALSE"]:
-            value = self.tokens[self.current][1].lower() == "true"
-            self.current +=1
+        elif self.expect("TRUE", "FALSE"):
+            value = self.current().type == "TRUE"
+            self.advance()
             return BooleanLiteral(value)
-        elif self.tokens[self.current][0] == "LEFT_PAREN":
+        elif self.expect("LEFT_PAREN"):
             return self.parse_paren()
         else:
-            raise Exception(f"Syntax Error: Expected expression, found {self.tokens[self.current][0]}")
+            raise Exception(f"Syntax Error: Expected expression, found {self.current().value}")
+            
     def parse_paren(self):
-        self.current +=1
+        self.advance()
         expr = self.parse_expression("RIGHT_PAREN")
-        if self.current >= len(self.tokens):
+        if self.is_eof():
             raise Exception("Unclosed parentheses")
-        if self.tokens[self.current][1] != ')':
+        if not self.expect("RIGHT_PAREN"):
             raise Exception("Expected ')'")
-        self.current+=1
+        self.advance()
         return expr
+        
+    def parse_block(self):
+        self.advance() #consuming { at the start
+        statements = []
+        while (not self.is_eof()) and (not self.expect("RIGHT_BRACE")):
+            #parse statements and append to the list
+            #print(self.tokens[self.current])
+            statements.append(self.parse_statement())
+        if self.is_eof():
+            raise Exception("Unclosed '{'")
+        self.advance() #consuming } at the end
+        return Block(statements)
+        
     def parse_binaryexpr(self, left, op, right, end_token):
        return BinaryExpression(left, op, right)
     def parse_expression(self, end_token, min_prec=0):
-        if self.current < len(self.tokens) and  self.tokens[self.current][0] in self.valid_expr_start:
+        if not self.is_eof() and self.expect(*self.valid_expr_start):
             currToken = self.parse_primary()
             
-            while self.current < len(self.tokens) and self.tokens[self.current][0] in BINARY_OPERATORS:
-                op = self.tokens[self.current][1]
+            while not self.is_eof() and self.expect(*BINARY_OPERATORS):
+                op = self.current().value
                 if PRECEDENCE[op] <= min_prec:
                     return currToken
-                self.current += 1
+                self.advance()
                 right = self.parse_expression(end_token, PRECEDENCE[op])
                 currToken = self.parse_binaryexpr(currToken, op, right, end_token)
-            if self.current < len(self.tokens):
-                if self.tokens[self.current][0] == end_token:
+            if not self.is_eof():
+                if self.expect(end_token):
                     return currToken
-                else:
-                    raise Exception("Expected an expression or end token")
+                return currToken
             else:
                 raise Exception("Expected an expression or end token")
         
         else:
             raise Exception("Expected Expression")
         
-    def parse_set(self):
+    def parse_let(self):
         var_name=None
         expr=None
-        self.current+=1
-        if self.tokens[self.current][0] == "IDENTIFIER":
-             var_name = self.tokens[self.current][1]
-             self.current+=1
+        self.advance()
+        if self.expect("IDENTIFIER"):
+             var_name = self.current().value
+             self.advance()
         else:
              raise Exception("Syntax Error: Expected an indentifier.")
-        if self.current < len(self.tokens) and self.tokens[self.current][0] == "TO":
-             self.current+=1
-             
+        if not self.is_eof() and self.expect("ASSIGN"):
+             self.advance()
         else:
-             raise Exception("Syntax Error: Expected 'to'.")
-        if self.tokens[self.current][0] in self.valid_expr_start:
+             raise Exception("Syntax Error: Expected '='.")
+        if self.expect(*self.valid_expr_start):
              expr = self.parse_expression("SEMI_COLON")
              print(expr)
              # self.current+=1
         else:
              raise Exception("Syntax Error: Expected a value.")
-        if self.current >= len(self.tokens):
+        if self.is_eof():
              raise Exception("Syntax Error: missing ';'.")
         else:
-             if self.tokens[self.current][0] == "SEMI_COLON":
-                 self.current+=1
+             if self.expect("SEMI_COLON"):
+                 self.advance()
              else:
                  raise Exception("Syntax Error: Expected';'.")
-        return SetStatement(Identifier(var_name), expr)
+        return LetStatement(Identifier(var_name), expr)
+    def parse_assignment(self):
+        var_name= self.current().value
+        expr=None
+        self.advance()
+        if not self.is_eof() and self.expect("ASSIGN"):
+             self.advance()
+        else:
+             raise Exception("Syntax Error: Expected '='.")
+        if self.expect(*self.valid_expr_start):
+             expr = self.parse_expression("SEMI_COLON")
+             #print(expr)
+             # self.current+=1
+        else:
+             raise Exception("Syntax Error: Expected a value.")
+        if self.is_eof():
+             raise Exception("Syntax Error: missing ';'.")
+        else:
+             if self.expect("SEMI_COLON"):
+                 self.advance()
+             else:
+                 raise Exception("Syntax Error: Expected';'.")
+        return AssignStatement(Identifier(var_name), expr)
     def parse_say(self):
         arg=None
-        self.current+=1
-        if self.current >= len(self.tokens):
+        self.advance()
+        if self.is_eof():
             raise Exception("Syntax Error: Expected '('.")
-        elif self.tokens[self.current][0] == "LEFT_PAREN":
-            self.current+=1
+        elif self.expect("LEFT_PAREN"):
+            self.advance()
         else:
             raise Exception("Syntax Error: Expected '('.")
-        if self.current >= len(self.tokens):
+        if self.is_eof():
             raise Exception("Syntax Error: Expected an indentifier.")
-        elif self.tokens[self.current][0] in ["IDENTIFIER", "NUMBER", "STRING", "LEFT_PAREN"]:
+        elif self.expect(*self.valid_expr_start):
             arg = self.parse_expression("RIGHT_PAREN")
             #print(arg)
         else:
             raise Exception("Syntax Error: Expected an indentifier.")
-        if self.current >= len(self.tokens):
+        if self.is_eof():
             raise Exception("Syntax Error: Expected  ')'.")
-        elif self.tokens[self.current][0] == "RIGHT_PAREN":
-            self.current+=1
+        elif self.expect("RIGHT_PAREN"):
+            self.advance()
         else:
             raise Exception("Syntax Error: Expected  ')'.")
-        if self.current >= len(self.tokens):
+        if self.is_eof():
             raise Exception("Syntax error: missing ';'.")
         else:
-            if self.tokens[self.current][0] == "SEMI_COLON":
-                self.current+=1
+            if self.expect("SEMI_COLON"):
+                self.advance()
             else:
-                raise Exception(f"Syntax error: Expected: ';', Found: '{self.tokens[self.current][1]}'.")
+                raise Exception(f"Syntax error: Expected: ';', Found: '{self.current().type}'.")
         return SayStatement(arg)
-    
-    def parse(self):
-        while self.current < len(self.tokens):
-            if self.tokens[self.current][0] == "SET":
-                self.statements.append(self.parse_set())
-            elif self.tokens[self.current][0] == "SAY":
-                self.statements.append(self.parse_say())
+    # refactor left from here
+    def parse_if(self):
+        condition = None
+        statements = None
+        else_branch = None
+        self.advance()
+        if not self.is_eof() and self.expect(*self.valid_expr_start):
+            condition = self.parse_expression("LEFT_BRACE")
+            print(condition)
+        else:
+            raise Exception("Syntax Erorr: Expected an Expression")
+        if self.expect("LEFT_BRACE"):
+            statements = self.parse_block()
+            if not self.is_eof() and self.expect("ELSE"):
+                self.advance()
+                if not self.is_eof() and self.expect("IF"):
+                    else_branch = self.parse_if()
+                else:
+                    if not self.is_eof() and  self.expect("LEFT_BRACE"):
+                        else_branch = self.parse_block()
+                    else:
+                        raise Exception(f"Syntax Error: Expected '{{' Found {self.current().value}")
+        else:
+            raise Exception(f"Syntax Error: Expected '{{' Found {self.current().value}")
+        print(IfStatement(condition, statements))
+        return IfStatement(condition, statements, else_branch)
+    def parse_while(self):
+        condition = None
+        statements = None
+        self.advance()
+        if not self.is_eof() and self.expect(*self.valid_expr_start):
+            condition = self.parse_expression("LEFT_BRACE")
+        else:
+            raise Exception("Syntax Erorr: Expected an Expression")
+        if not self.is_eof() and self.expect("LEFT_BRACE"):
+            statements = self.parse_block()
+        else:
+            raise Exception(f"Syntax Error: Expected '{{' Found {self.current().value}")
+        return WhileStatement(condition, statements)
+        
+    def parse_control(self):
+        control = None
+        if self.expect("EXIT"):
+            control = ExitStatement()
+            self.advance()
+            if not self.is_eof() and self.expect("SEMI_COLON"):
+                self.advance()#consume ;
             else:
-                 raise Exception(f"Syntax Error: Unknown token: '{self.tokens[self.current][1]}'")
+                raise Exception("Syntax Error: Missing Semicolon")
+        elif self.expect("NEXT"):
+            control = NextStatement()
+            self.advance()
+            if not self.is_eof() and self.expect("SEMI_COLON"):
+                self.advance()
+            else:
+                raise Exception("Syntax Error: Missing Semicolon")
+        return control
+    def parse_function(self):
+        parameters = []
+        block = None
+        self.advance() #consume fun
+        if self.is_eof():
+            raise Exception("Syntax Error: Expected '('")
+        elif not self.expect("IDENTIFIER"):
+            raise Exception(f"Syntax Erorr: Expected Function Name, Found {self.current().value}")
+        fun_name = self.current().value
+        self.advance()
+        if not self.is_eof() and self.expect("LEFT_PAREN"):
+            self.advance()
+            if self.is_eof():
+                raise Exception("Syntax Error: Missing ')'")
+            if self.expect("RIGHT_PAREN"):
+                self.advance()
+                block = self.parse_block()
+                return Function(fun_name, None, block)
+            elif not self.is_eof() and self.expect("IDENTIFIER"):
+                parameters.append(self.parse_primary())
+                while not self.is_eof() and self.expect("COMMA"):
+                    self.advance()
+                    if not self.is_eof() and self.expect("RIGHT_PAREN"):
+                        raise Exception("Syntax Error: Expected Parameter After Comma")
+                    if not self.is_eof() and not self.expect("IDENTIFIER"):
+                        raise Exception(f"Syntax Error: Expected Parameter, Found: {self.current().type}")
+                    parameters.append(self.parse_primary())
+                if not self.is_eof() and self.expect("RIGHT_PAREN"):
+                    self.advance()
+                    block = self.parse_block()
+                    return Function(fun_name, parameters, block)
+                else:
+                    raise Exception(f"Syntax Error: Expected ',' or ')', Found: {self.current().type}")
+            else:
+                raise Exception(f"Syntax Error: Expected a Parameter, Found: {self.current().type}")
+                
+        else:
+            raise Exception(f"Syntax Error: Expected '(', Found {self.current().value}")
+     
+    def parse_funcall(self):
+        fun_name = self.current().value
+        arguments=[]
+        self.advance()
+        if not self.is_eof() and self.expect("LEFT_PAREN"):
+            self.advance()
+            if self.is_eof():
+                raise Exception("Syntax Error: Expected ')'")
+            if self.current().type == "RIGHT_PAREN":
+                self.advance()
+                if self.is_eof() or not self.expect("SEMI_COLON"):
+                    raise Exception(f"Syntax Error: Expected ';', Found: {self.current().type}")
+                return FunCall(fun_name)
+            elif self.expect(*self.valid_expr_start):
+                arguments.append(self.parse_expression())
+                self.advance()
+                while not self.is_eof() and self.expect("COMMA"):
+                    self.advance()
+                    if not self.is_eof() and self.expect("RIGHT_PAREN"):
+                        raise Exception("Syntax Error: Expected Argument After Comma")
+                    arguments.append(self.parse_expression())
+                if not self.is_eof() and self.expect("RIGHT_PAREN"):
+                    self.advance()
+                    if self.is_eof() or not self.expect("SEMI_COLON"):
+                        raise Exception(f"Syntax Error: Expected ';', Found: {self.current().type}")
+                    return FunCall(fun_name, arguments)
+                else:
+                    raise Exception(f"Syntax Error: Expected ',' or ')', Found: {self.current().type}")
+                
+        else:
+            raise Exception(f"Syntax Error: Expected '(', Found {self.current().value}")
+    def parse_statement(self):
+        if self.expect("LET"):
+            return self.parse_let()
+        elif self.expect("IDENTIFIER") and self.peek().type == "ASSIGN":
+            return self.parse_assignment()
+        elif self.expect("IDENTIFIER") and self.peek().type == "LEFT_PAREN":
+            return self.parse_funcall()
+        elif self.expect("SAY"):
+            return self.parse_say()
+        elif self.expect("IF"):
+            return self.parse_if()
+        elif self.expect("LEFT_BRACE"):
+            return self.parse_block()
+        elif self.expect("WHILE"):
+            return self.parse_while()
+        elif self.expect(*["EXIT", "NEXT"]):
+            return self.parse_control()
+        elif self.expect("FUN"):
+            return self.parse_function()
+        else:
+            raise Exception(f"Syntax Error: Unknown token: '{self.current().value}'")
+    def parse(self):
+        while not self.is_eof():
+            self.statements.append(self.parse_statement())
+        print(self.statements)
         return Program(self.statements)
           

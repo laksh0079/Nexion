@@ -1,25 +1,2 @@
-set a to 17;
-set b to 4;
-set c to 9;
-set d to 2;
-set e to 6;
-set f to 3;
-set g to 1;
-set h to 5;
-
-set result to
-    not (
-        (
-            ((a + b * c) > (d + e / f))
-            and
-            ((a - c) != (b + d))
-        )
-        or
-        (
-            ((g * h + a) == (b * c - d))
-            and
-            not ((e + f) <= (a - b))
-        )
-    );
-
-say(result);
+let a = 0;
+a = 2;

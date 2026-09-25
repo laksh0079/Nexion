@@ -1,2 +1,37 @@
-let a = 0;
-a = 2;
+let x = 10;
+let total = 0;
+
+fun calculate(a, b) {
+    let result = a * b + x;
+
+    if (result > 50 and a > 2) {
+        say(result);
+    } else {
+        say(0);
+    }
+
+    let i = 0;
+
+    while (i < 3) {
+        total = total + result;
+        i = i + 1;
+    }
+}
+
+fun test_scope(value) {
+    let x = 100;
+
+    {
+        let y = value + x;
+
+        if (y > 120 or value == 20) {
+            say(y);
+        }
+    }
+}
+
+calculate(5, 10);
+test_scope(25);
+
+say(total);
+say(x);

@@ -86,6 +86,20 @@ class Interpreter:
             raise ExitSignal()
         elif isinstance(node, NextStatement):
             raise NextSignal()
+        elif isinstance(node, FunCall):
+            if not node.name in self.functions:
+                raise Exception(f"Runtime Error: The Function {node.name} Does Not Exist")
+            #arguments = node.arguments
+            var_list = {}
+            func = self.functions[node.name]
+            if len(func.parameters) != len(node.arguments):
+                raise Exception("Runtime Error: The lengths of the given parameters and arguments do not match.")
+            for p, a in zip(func.parameters, node.arguments):
+                var_list[p.name] = self.evaluate(a)
+            print(var_list)
+            self.current_scope = Scope(var_list, self.current_scope)
+            self.execute(func.statements)
+            self.current_scope = self.current_scope.parent
     def evaluate(self, node):
         if isinstance(node, StringLiteral):
             return node.string
@@ -109,9 +123,8 @@ class Interpreter:
         elif isinstance(node, UnaryExpression):
             operand = self.evaluate(node.operand)
             return self.apply_unary(node.operator, operand)
-        elif isinstance(node, FunCall):
-            if node.name in 
-            arguments = node.arguments
+        
+            
             
     def run(self):
         self.index_functions(self.root)

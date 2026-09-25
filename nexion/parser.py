@@ -290,19 +290,21 @@ class Parser:
                 self.advance()
                 if self.is_eof() or not self.expect("SEMI_COLON"):
                     raise Exception(f"Syntax Error: Expected ';', Found: {self.current().type}")
+                self.advance()
                 return FunCall(fun_name)
             elif self.expect(*self.valid_expr_start):
-                arguments.append(self.parse_expression())
-                self.advance()
+                arguments.append(self.parse_expression("COMMA"))
+                print(self.current())
                 while not self.is_eof() and self.expect("COMMA"):
                     self.advance()
                     if not self.is_eof() and self.expect("RIGHT_PAREN"):
                         raise Exception("Syntax Error: Expected Argument After Comma")
-                    arguments.append(self.parse_expression())
+                    arguments.append(self.parse_expression("COMMA"))
                 if not self.is_eof() and self.expect("RIGHT_PAREN"):
                     self.advance()
                     if self.is_eof() or not self.expect("SEMI_COLON"):
                         raise Exception(f"Syntax Error: Expected ';', Found: {self.current().type}")
+                    self.advance()
                     return FunCall(fun_name, arguments)
                 else:
                     raise Exception(f"Syntax Error: Expected ',' or ')', Found: {self.current().type}")
@@ -329,7 +331,7 @@ class Parser:
         elif self.expect("FUN"):
             return self.parse_function()
         else:
-            raise Exception(f"Syntax Error: Unknown token: '{self.current().value}'")
+            raise Exception(f"Syntax Error: Unknown token: '{self.current().value}', at {self.position}")
     def parse(self):
         while not self.is_eof():
             self.statements.append(self.parse_statement())

@@ -18,7 +18,9 @@ class Lexer:
         "while": "WHILE",
         "exit": "EXIT",
         "next": "NEXT",
-        "fun": "FUN"
+        "fun": "FUN",
+        "none": "NONE",
+        "return": "RETURN"
    }
     
     symbols = {
@@ -112,5 +114,5 @@ class Lexer:
                 self.scan_symbols()
             else:
                 raise Exception("Lexical Error: Unknown Error")
-        print(self.tokens)
+        #print(self.tokens)
         return self.tokens

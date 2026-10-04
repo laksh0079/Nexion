@@ -1,14 +1,17 @@
 from AST.program import Program
-from AST.statements import LetStatement, AssignStatement, SayStatement, IfStatement, Block, Scope, WhileStatement, NextStatement, ExitStatement, Function, FunCall
-from AST.exceptions import NextSignal, ExitSignal
-from AST.expressions import StringLiteral, NumberLiteral, Identifier, BinaryExpression, BooleanLiteral, UnaryExpression
+from AST.statements import LetStatement, AssignStatement, SayStatement, IfStatement, Block, Scope, WhileStatement, NextStatement, ExitStatement, Function, FunCall, ReturnStatement
+from AST.exceptions import NextSignal, ExitSignal, ReturnSignal
+from AST.expressions import StringLiteral, NumberLiteral, Identifier, BinaryExpression, BooleanLiteral, UnaryExpression, NoneLiteral
 from operators import OPERATOR_BEHAVIOUR, UNARY_BEHAVIOUR
 class Interpreter:
+    
     def __init__(self, root):
         self.root = root
         self.global_scope = Scope({})
         self.current_scope = self.global_scope
         self.functions = {}
+        self.MATH_OPERATORS = {"+", "-", "*", "/", "%"}
+        
     def apply_operator(self, left, mid, right):
         if mid in ["+","-","*","/"]:
             if type(left) is bool or type(right) is bool:
@@ -47,7 +50,11 @@ class Interpreter:
             else:
                 raise Exception(f"The variable {name} does not exist")
         elif isinstance(node, SayStatement):
-            print(self.evaluate(node.value))
+            arg = self.evaluate(node.value)
+            if (arg is None):
+                print("none")
+            else:
+                print(arg)
         elif isinstance(node, IfStatement):
             res = self.evaluate(node.condition)
             if type(res) is not bool:
@@ -87,19 +94,13 @@ class Interpreter:
         elif isinstance(node, NextStatement):
             raise NextSignal()
         elif isinstance(node, FunCall):
-            if not node.name in self.functions:
-                raise Exception(f"Runtime Error: The Function {node.name} Does Not Exist")
-            #arguments = node.arguments
-            var_list = {}
-            func = self.functions[node.name]
-            if len(func.parameters) != len(node.arguments):
-                raise Exception("Runtime Error: The lengths of the given parameters and arguments do not match.")
-            for p, a in zip(func.parameters, node.arguments):
-                var_list[p.name] = self.evaluate(a)
-            print(var_list)
-            self.current_scope = Scope(var_list, self.current_scope)
-            self.execute(func.statements)
-            self.current_scope = self.current_scope.parent
+            pass
+        elif isinstance(node, ReturnStatement):
+            if node.value is None:
+                raise ReturnSignal()
+            return_val = self.evaluate(node.value)
+            raise ReturnSignal(return_val)
+      
     def evaluate(self, node):
         if isinstance(node, StringLiteral):
             return node.string
@@ -116,6 +117,9 @@ class Interpreter:
         elif isinstance(node, BinaryExpression):
             left = self.evaluate(node.left)
             right = self.evaluate(node.right)
+            if node.root in self.MATH_OPERATORS:
+                if left is None or right is None:
+                    raise Exception("Runtime Error: Cannot Perform Mathematical operations on 'none'")
             #print("EVAL:", left, node.root, right)
             return self.apply_operator(left, node.root, right)
         elif isinstance(node, BooleanLiteral):
@@ -123,6 +127,26 @@ class Interpreter:
         elif isinstance(node, UnaryExpression):
             operand = self.evaluate(node.operand)
             return self.apply_unary(node.operator, operand)
+        elif isinstance(node, NoneLiteral):
+            return node.value
+        elif isinstance(node, FunCall):
+             if not node.name in self.functions:
+                raise Exception(f"Runtime Error: The Function {node.name} Does Not Exist")
+            #arguments = node.arguments
+             var_list = {}
+             func = self.functions[node.name]
+             if len(func.parameters) != len(node.arguments):
+                 raise Exception("Runtime Error: The lengths of the given parameters and arguments do not match.")
+             for p, a in zip(func.parameters, node.arguments):
+                 var_list[p.name] = self.evaluate(a)
+            #print(var_list)
+             self.current_scope = Scope(var_list, self.current_scope)
+             try:
+                 self.execute(func.statements)
+             except ReturnSignal as r:
+                 return r.value
+             finally:
+                 self.current_scope = self.current_scope.parent
         
             
             

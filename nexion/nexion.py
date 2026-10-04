@@ -2,7 +2,7 @@ from lexer import Lexer
 from parser import Parser
 from interpreter import Interpreter
 source = open("/storage/emulated/0/nexion/examples/hello.nxn").read()
-#lprint(source)
+print(source)
 lexer = Lexer(source)
 try:
     tokens = lexer.scan_tokens()

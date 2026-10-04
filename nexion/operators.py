@@ -48,7 +48,8 @@ OPERATOR_BEHAVIOUR = {
 }
 
 UNARY_BEHAVIOUR = {
-    "not": lambda operand: not operand
+    "not": lambda operand: not operand,
+    "minus": lambda operand: -operand
 }
 
 OPERATOR_STARTS = {"+","-","*","/",">","<","!","=","%"}

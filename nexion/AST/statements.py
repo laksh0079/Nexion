@@ -52,7 +52,11 @@ class ExitStatement:
 
 class NextStatement:
     pass
-   
+ 
+class ReturnStatement:
+    def __init__(self, value=None):
+        self.value = value
+
 class Function:
     def __init__(self, name, parameters=None, statements=None):
         self.name = name

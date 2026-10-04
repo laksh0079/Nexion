@@ -2,6 +2,10 @@ class Expressions:
     pass
 
 
+class NoneLiteral:
+    def __init__(self):
+        self.value = None
+    
 class NumberLiteral(Expressions):
     def __init__(self, number):
         self.number = number

@@ -1,6 +1,6 @@
-from AST.statements import LetStatement, AssignStatement, SayStatement, IfStatement, Block, WhileStatement, ExitStatement, NextStatement, Function, FunCall
+from AST.statements import LetStatement, AssignStatement, SayStatement, IfStatement, Block, WhileStatement, ExitStatement, NextStatement, Function, FunCall, ReturnStatement
 from AST.program import Program
-from AST.expressions import NumberLiteral, StringLiteral, Identifier, BinaryExpression, BooleanLiteral, UnaryExpression
+from AST.expressions import NumberLiteral, StringLiteral, Identifier, BinaryExpression, BooleanLiteral, UnaryExpression, NoneLiteral
 from operators import PRECEDENCE,BINARY_OPERATORS
 class Parser:
     def __init__(self, tokens):
@@ -14,7 +14,9 @@ class Parser:
             "STRING",
             "TRUE",
             "FALSE",
-            "NOT"
+            "NOT",
+            "NONE",
+            "MINUS"
         ]
     
     def is_eof(self):
@@ -41,11 +43,17 @@ class Parser:
             self.advance()
             operand = self.parse_primary()
             return UnaryExpression("not", operand)
+        elif self.expect("MINUS"):
+            self.advance()
+            operand = self.parse_primary()
+            return UnaryExpression("minus", operand)
         elif self.expect("STRING"):
             value = self.current().value
             self.advance()
             return StringLiteral(value)
         elif self.expect("IDENTIFIER"):
+            if self.peek().type == "LEFT_PAREN":
+                return self.parse_funcall()
             value = self.current().value
             self.advance()
             return Identifier(value)
@@ -55,6 +63,9 @@ class Parser:
             return BooleanLiteral(value)
         elif self.expect("LEFT_PAREN"):
             return self.parse_paren()
+        elif self.expect("NONE"):
+            self.advance()
+            return NoneLiteral()
         else:
             raise Exception(f"Syntax Error: Expected expression, found {self.current().value}")
             
@@ -118,7 +129,7 @@ class Parser:
              raise Exception("Syntax Error: Expected '='.")
         if self.expect(*self.valid_expr_start):
              expr = self.parse_expression("SEMI_COLON")
-             print(expr)
+             #print(expr)
              # self.current+=1
         else:
              raise Exception("Syntax Error: Expected a value.")
@@ -141,7 +152,6 @@ class Parser:
         if self.expect(*self.valid_expr_start):
              expr = self.parse_expression("SEMI_COLON")
              #print(expr)
-             # self.current+=1
         else:
              raise Exception("Syntax Error: Expected a value.")
         if self.is_eof():
@@ -190,7 +200,7 @@ class Parser:
         self.advance()
         if not self.is_eof() and self.expect(*self.valid_expr_start):
             condition = self.parse_expression("LEFT_BRACE")
-            print(condition)
+            #print(condition)
         else:
             raise Exception("Syntax Erorr: Expected an Expression")
         if self.expect("LEFT_BRACE"):
@@ -206,7 +216,7 @@ class Parser:
                         raise Exception(f"Syntax Error: Expected '{{' Found {self.current().value}")
         else:
             raise Exception(f"Syntax Error: Expected '{{' Found {self.current().value}")
-        print(IfStatement(condition, statements))
+        #print(IfStatement(condition, statements))
         return IfStatement(condition, statements, else_branch)
     def parse_while(self):
         condition = None
@@ -222,6 +232,19 @@ class Parser:
             raise Exception(f"Syntax Error: Expected '{{' Found {self.current().value}")
         return WhileStatement(condition, statements)
         
+    def parse_return(self):
+        self.advance()
+        if not self.is_eof() and self.expect("SEMI_COLON"):
+            self.advance()
+            return ReturnStatement()
+        elif self.expect(*self.valid_expr_start):
+            return_value = self.parse_expression("SEMI_COLON")
+            self.advance()
+            print(self.current())
+            return ReturnStatement(return_value)
+        else:
+            raise Exception("Syntax Error: Missing Semicolon")
+
     def parse_control(self):
         control = None
         if self.expect("EXIT"):
@@ -288,13 +311,9 @@ class Parser:
                 raise Exception("Syntax Error: Expected ')'")
             if self.current().type == "RIGHT_PAREN":
                 self.advance()
-                if self.is_eof() or not self.expect("SEMI_COLON"):
-                    raise Exception(f"Syntax Error: Expected ';', Found: {self.current().type}")
-                self.advance()
                 return FunCall(fun_name)
             elif self.expect(*self.valid_expr_start):
                 arguments.append(self.parse_expression("COMMA"))
-                print(self.current())
                 while not self.is_eof() and self.expect("COMMA"):
                     self.advance()
                     if not self.is_eof() and self.expect("RIGHT_PAREN"):
@@ -302,9 +321,7 @@ class Parser:
                     arguments.append(self.parse_expression("COMMA"))
                 if not self.is_eof() and self.expect("RIGHT_PAREN"):
                     self.advance()
-                    if self.is_eof() or not self.expect("SEMI_COLON"):
-                        raise Exception(f"Syntax Error: Expected ';', Found: {self.current().type}")
-                    self.advance()
+                    print("FUNCALL:", fun_name, arguments)
                     return FunCall(fun_name, arguments)
                 else:
                     raise Exception(f"Syntax Error: Expected ',' or ')', Found: {self.current().type}")
@@ -317,7 +334,9 @@ class Parser:
         elif self.expect("IDENTIFIER") and self.peek().type == "ASSIGN":
             return self.parse_assignment()
         elif self.expect("IDENTIFIER") and self.peek().type == "LEFT_PAREN":
-            return self.parse_funcall()
+            ast = self.parse_funcall()
+            self.advance()
+            return ast
         elif self.expect("SAY"):
             return self.parse_say()
         elif self.expect("IF"):
@@ -330,11 +349,13 @@ class Parser:
             return self.parse_control()
         elif self.expect("FUN"):
             return self.parse_function()
+        elif self.expect("RETURN"):
+            return self.parse_return()
         else:
             raise Exception(f"Syntax Error: Unknown token: '{self.current().value}', at {self.position}")
     def parse(self):
         while not self.is_eof():
             self.statements.append(self.parse_statement())
-        print(self.statements)
+        #print(self.statements)
         return Program(self.statements)
           

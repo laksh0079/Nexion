@@ -60,29 +60,30 @@ class Interpreter:
             if type(res) is not bool:
                 raise Exception(f"Runtime Error: If condition must be boolean, got {type(res).__name__}")
             if res:
-                for statement in node.statements.statements:
-                    self.execute(statement)
+                
+                self.execute(node.statements)
             else:
                 if node.else_branch is not None:
                     if type(node.else_branch) is IfStatement:
                         self.execute(node.else_branch)
                     else:
-                        for statement in node.else_branch.statements:
-                            self.execute(statement)
+                        self.execute(node.else_branch)
         elif type(node) is Block:
-            self.current_scope = Scope({}, self.current_scope)
-            for statement in node.statements:
-                self.execute(statement)
-            self.current_scope = self.current_scope.parent
+            previous_scope = self.current_scope
+            self.current_scope = Scope({}, previous_scope)
+            try:
+                for statement in node.statements:
+                    self.execute(statement)
+            finally:  
+                self.current_scope = previous_scope
         elif type(node) is WhileStatement:
             while True:
                 condition = self.evaluate(node.condition)
                 if type(condition) is not bool:
-                    raise Exception(f"Runtime Error: While condition must be boolean, got {type(res).__name__}")
+                    raise Exception(f"Runtime Error: While condition must be boolean, got {type(condition).__name__}")
                 if condition:
                     try:
-                        for statement in node.statements.statements:
-                            self.execute(statement)
+                        self.execute(node.statements)
                     except ExitSignal:
                         break
                     except NextSignal:
@@ -98,6 +99,8 @@ class Interpreter:
                 raise ReturnSignal()
             return_val = self.evaluate(node.value)
             raise ReturnSignal(return_val)
+        elif type(node) is FunCall:
+            self.evaluate(node)
       
     def evaluate(self, node):
         if type(node) is StringLiteral:
@@ -127,7 +130,7 @@ class Interpreter:
             return self.apply_unary(node.operator, operand)
         elif type(node) is NoneLiteral:
             return node.value
-        elif type(node) is FunCall:
+        elif isinstance(node, FunCall):
              if not node.name in self.functions:
                 raise Exception(f"Runtime Error: The Function {node.name} Does Not Exist")
             #arguments = node.arguments
@@ -137,14 +140,15 @@ class Interpreter:
                  raise Exception("Runtime Error: The lengths of the given parameters and arguments do not match.")
              for p, a in zip(func.parameters, node.arguments):
                  var_list[p.name] = self.evaluate(a)
-            #print(var_list)
-             self.current_scope = Scope(var_list, self.current_scope)
+             previous_scope = self.current_scope
+             self.current_scope = Scope(var_list, previous_scope)
+
              try:
                  self.execute(func.statements)
              except ReturnSignal as r:
                  return r.value
              finally:
-                 self.current_scope = self.current_scope.parent
+                 self.current_scope = previous_scope
         
             
             

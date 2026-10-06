@@ -84,7 +84,7 @@ class Parser:
         statements = []
         while (not self.is_eof()) and (not self.expect("RIGHT_BRACE")):
             #parse statements and append to the list
-            #print(self.tokens[self.current])
+            
             statements.append(self.parse_statement())
         if self.is_eof():
             raise Exception("Unclosed '{'")
@@ -129,8 +129,6 @@ class Parser:
              raise Exception("Syntax Error: Expected '='.")
         if self.expect(*self.valid_expr_start):
              expr = self.parse_expression("SEMI_COLON")
-             #print(expr)
-             # self.current+=1
         else:
              raise Exception("Syntax Error: Expected a value.")
         if self.is_eof():
@@ -151,7 +149,6 @@ class Parser:
              raise Exception("Syntax Error: Expected '='.")
         if self.expect(*self.valid_expr_start):
              expr = self.parse_expression("SEMI_COLON")
-             #print(expr)
         else:
              raise Exception("Syntax Error: Expected a value.")
         if self.is_eof():
@@ -175,7 +172,6 @@ class Parser:
             raise Exception("Syntax Error: Expected an indentifier.")
         elif self.expect(*self.valid_expr_start):
             arg = self.parse_expression("RIGHT_PAREN")
-            #print(arg)
         else:
             raise Exception("Syntax Error: Expected an indentifier.")
         if self.is_eof():
@@ -200,7 +196,6 @@ class Parser:
         self.advance()
         if not self.is_eof() and self.expect(*self.valid_expr_start):
             condition = self.parse_expression("LEFT_BRACE")
-            #print(condition)
         else:
             raise Exception("Syntax Erorr: Expected an Expression")
         if self.expect("LEFT_BRACE"):
@@ -216,7 +211,6 @@ class Parser:
                         raise Exception(f"Syntax Error: Expected '{{' Found {self.current().value}")
         else:
             raise Exception(f"Syntax Error: Expected '{{' Found {self.current().value}")
-        #print(IfStatement(condition, statements))
         return IfStatement(condition, statements, else_branch)
     def parse_while(self):
         condition = None
@@ -240,7 +234,7 @@ class Parser:
         elif self.expect(*self.valid_expr_start):
             return_value = self.parse_expression("SEMI_COLON")
             self.advance()
-            print(self.current())
+          
             return ReturnStatement(return_value)
         else:
             raise Exception("Syntax Error: Missing Semicolon")
@@ -321,7 +315,6 @@ class Parser:
                     arguments.append(self.parse_expression("COMMA"))
                 if not self.is_eof() and self.expect("RIGHT_PAREN"):
                     self.advance()
-                    print("FUNCALL:", fun_name, arguments)
                     return FunCall(fun_name, arguments)
                 else:
                     raise Exception(f"Syntax Error: Expected ',' or ')', Found: {self.current().type}")

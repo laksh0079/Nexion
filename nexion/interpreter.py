@@ -25,20 +25,20 @@ class Interpreter:
         raise Exception("Unknknown operator", operator)
     
     def index_functions(self, node):
-        if isinstance(node, Program):
+        if type(node) is Program:
             for statement in node.statements:
-                if isinstance(statement, Function):
+                if type(statement) is Function:
                     self.functions[statement.name] = statement
         
     def execute(self, node):
-        if isinstance(node, Program):
+        if type(node) is Program:
             for statement in node.statements:
                 self.execute(statement)
-        elif isinstance(node, LetStatement):
+        elif type(node) is LetStatement:
             name = node.variable.name
             value = self.evaluate(node.value)
             self.current_scope.variables[name] = value
-        elif isinstance(node, AssignStatement):
+        elif type(node) is AssignStatement:
             name = node.variable.name
             lookup_scope = self.current_scope
             while lookup_scope is not None:
@@ -49,13 +49,13 @@ class Interpreter:
                     lookup_scope = lookup_scope.parent
             else:
                 raise Exception(f"The variable {name} does not exist")
-        elif isinstance(node, SayStatement):
+        elif type(node) is SayStatement:
             arg = self.evaluate(node.value)
             if (arg is None):
                 print("none")
             else:
                 print(arg)
-        elif isinstance(node, IfStatement):
+        elif type(node) is IfStatement:
             res = self.evaluate(node.condition)
             if type(res) is not bool:
                 raise Exception(f"Runtime Error: If condition must be boolean, got {type(res).__name__}")
@@ -64,17 +64,17 @@ class Interpreter:
                     self.execute(statement)
             else:
                 if node.else_branch is not None:
-                    if isinstance(node.else_branch, IfStatement):
+                    if type(node.else_branch) is IfStatement:
                         self.execute(node.else_branch)
                     else:
                         for statement in node.else_branch.statements:
                             self.execute(statement)
-        elif isinstance(node, Block):
+        elif type(node) is Block:
             self.current_scope = Scope({}, self.current_scope)
             for statement in node.statements:
                 self.execute(statement)
             self.current_scope = self.current_scope.parent
-        elif isinstance(node, WhileStatement):
+        elif type(node) is WhileStatement:
             while True:
                 condition = self.evaluate(node.condition)
                 if type(condition) is not bool:
@@ -89,24 +89,22 @@ class Interpreter:
                         continue
                 else:
                     break
-        elif isinstance(node, ExitStatement):
+        elif type(node) is ExitStatement:
             raise ExitSignal()
-        elif isinstance(node, NextStatement):
+        elif type(node) is NextStatement:
             raise NextSignal()
-        elif isinstance(node, FunCall):
-            pass
-        elif isinstance(node, ReturnStatement):
+        elif type(node) is ReturnStatement:
             if node.value is None:
                 raise ReturnSignal()
             return_val = self.evaluate(node.value)
             raise ReturnSignal(return_val)
       
     def evaluate(self, node):
-        if isinstance(node, StringLiteral):
+        if type(node) is StringLiteral:
             return node.string
-        elif isinstance(node, NumberLiteral):
+        elif type(node) is NumberLiteral:
             return node.number
-        elif isinstance(node, Identifier):
+        elif type(node) is Identifier:
             lookup_scope = self.current_scope
             while lookup_scope is not None:
                 if node.name in lookup_scope.variables:
@@ -114,7 +112,7 @@ class Interpreter:
                 else:
                     lookup_scope = lookup_scope.parent
             raise Exception(f"The variable {node.name} does not exist")
-        elif isinstance(node, BinaryExpression):
+        elif type(node) is BinaryExpression:
             left = self.evaluate(node.left)
             right = self.evaluate(node.right)
             if node.root in self.MATH_OPERATORS:
@@ -122,14 +120,14 @@ class Interpreter:
                     raise Exception("Runtime Error: Cannot Perform Mathematical operations on 'none'")
             #print("EVAL:", left, node.root, right)
             return self.apply_operator(left, node.root, right)
-        elif isinstance(node, BooleanLiteral):
+        elif type(node) is BooleanLiteral:
             return node.value
-        elif isinstance(node, UnaryExpression):
+        elif type(node) is UnaryExpression:
             operand = self.evaluate(node.operand)
             return self.apply_unary(node.operator, operand)
-        elif isinstance(node, NoneLiteral):
+        elif type(node) is NoneLiteral:
             return node.value
-        elif isinstance(node, FunCall):
+        elif type(node) is FunCall:
              if not node.name in self.functions:
                 raise Exception(f"Runtime Error: The Function {node.name} Does Not Exist")
             #arguments = node.arguments

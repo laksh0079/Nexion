@@ -42,7 +42,9 @@ class Lexer:
     def advance(self):
         self.position += 1
     def peek(self):
-        return self.source[self.position+1]
+        if self.position + 1 >= len(self.source):
+            return None
+        return self.source[self.position + 1]
     def is_eof(self):
         return self.position >= len(self.source)
     def scan_identifier(self):
@@ -100,7 +102,11 @@ class Lexer:
 
     def scan_tokens(self):
         while not self.is_eof():
-            if self.current().isspace():
+            if self.current() == "/" and self.peek() == "/":
+                print("hey")
+                while not self.is_eof() and not self.current() == "\n":
+                    self.advance()
+            elif self.current().isspace():
                 self.advance()
             elif self.current().isalpha() or self.current() == "_":
                 self.scan_identifier()

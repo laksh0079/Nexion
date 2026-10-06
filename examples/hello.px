@@ -1,4 +1,0 @@
-set a to 9;
-set b to a;
-say(a);
-say(b);

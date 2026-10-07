@@ -44,3 +44,18 @@ class UnaryExpression(Expressions):
         self.operand = operand
     def __repr__(self):
         return f"Unary: Operator: {self.operator}, Operand: {self.operand}"
+        
+class ListLiteral:
+    def __init__(self, elements=[]):
+        self.elements = elements
+    def __repr__(self):
+        return f"Elements: {self.elements}"
+
+        
+class IndexExpression:
+    def __init__(self, target, index):
+        self.target = target
+        self.index = index
+        
+    def __repr__(self):
+        return f"{self.target}[{self.index}]"

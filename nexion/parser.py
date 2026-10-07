@@ -1,6 +1,6 @@
 from AST.statements import LetStatement, AssignStatement, SayStatement, IfStatement, Block, WhileStatement, ExitStatement, NextStatement, Function, FunCall, ReturnStatement
 from AST.program import Program
-from AST.expressions import NumberLiteral, StringLiteral, Identifier, BinaryExpression, BooleanLiteral, UnaryExpression, NoneLiteral
+from AST.expressions import NumberLiteral, StringLiteral, Identifier, BinaryExpression, BooleanLiteral, UnaryExpression, NoneLiteral, ListLiteral, IndexExpression
 from operators import PRECEDENCE,BINARY_OPERATORS
 class Parser:
     def __init__(self, tokens):
@@ -16,7 +16,8 @@ class Parser:
             "FALSE",
             "NOT",
             "NONE",
-            "MINUS"
+            "MINUS",
+            "LEFT_BRACKET"
         ]
     
     def is_eof(self):
@@ -52,11 +53,13 @@ class Parser:
             self.advance()
             return StringLiteral(value)
         elif self.expect("IDENTIFIER"):
-            if self.peek().type == "LEFT_PAREN":
-                return self.parse_funcall()
-            value = self.current().value
+            ident = Identifier(self.current().value)
             self.advance()
-            return Identifier(value)
+            if self.expect("LEFT_PAREN"):
+                return self.parse_funcall(ident)
+            elif self.expect("LEFT_BRACKET"):
+                return self.parse_index(ident)
+            return ident
         elif self.expect("TRUE", "FALSE"):
             value = self.current().type == "TRUE"
             self.advance()
@@ -66,6 +69,8 @@ class Parser:
         elif self.expect("NONE"):
             self.advance()
             return NoneLiteral()
+        elif self.expect("LEFT_BRACKET"):
+            return self.parse_list()
         else:
             raise Exception(f"Syntax Error: Expected expression, found {self.current().value}")
             
@@ -139,10 +144,8 @@ class Parser:
              else:
                  raise Exception("Syntax Error: Expected';'.")
         return LetStatement(Identifier(var_name), expr)
-    def parse_assignment(self):
-        var_name= self.current().value
+    def parse_assignment(self, var_name):
         expr=None
-        self.advance()
         if not self.is_eof() and self.expect("ASSIGN"):
              self.advance()
         else:
@@ -295,10 +298,8 @@ class Parser:
         else:
             raise Exception(f"Syntax Error: Expected '(', Found {self.current().value}")
      
-    def parse_funcall(self):
-        fun_name = self.current().value
+    def parse_funcall(self, fun_name):
         arguments=[]
-        self.advance()
         if not self.is_eof() and self.expect("LEFT_PAREN"):
             self.advance()
             if self.is_eof():
@@ -321,15 +322,54 @@ class Parser:
                 
         else:
             raise Exception(f"Syntax Error: Expected '(', Found {self.current().value}")
+            
+    def parse_list(self):
+        self.advance()
+        elements = []
+        if not self.is_eof() and self.expect("RIGHT_BRACKET"):
+            self.advance()
+            return ListLiteral()
+        elif not self.is_eof() and self.expect(*self.valid_expr_start):
+            elements.append(self.parse_primary())
+            while not self.is_eof() and (self.expect("COMMA")):
+                self.advance()
+                elements.append(self.parse_primary())
+            if not self.is_eof() and self.expect("RIGHT_BRACKET"):
+                self.advance()
+                return ListLiteral(elements)
+        else:
+            raise Exception("Syntax Error: Expected an Expression")
+            
+    def parse_index(self, target):
+        while not self.is_eof() and self.expect("LEFT_BRACKET"):
+            print(self.current().type)
+            self.advance()
+            target = IndexExpression(target, self.parse_primary())
+            if self.is_eof() or not self.expect("RIGHT_BRACKET"):
+                raise Exception("Syntax Error: Missing ']'")
+            self.advance()
+        return target
+                
     def parse_statement(self):
         if self.expect("LET"):
             return self.parse_let()
-        elif self.expect("IDENTIFIER") and self.peek().type == "ASSIGN":
-            return self.parse_assignment()
-        elif self.expect("IDENTIFIER") and self.peek().type == "LEFT_PAREN":
-            ast = self.parse_funcall()
+        elif self.expect("IDENTIFIER"):
+            ident = Identifier(self.current().value)
             self.advance()
-            return ast
+            if self.is_eof():
+                raise Exception("Syntax Error: Missing ';'")
+            if self.expect("ASSIGN"):
+                return self.parse_assignment(ident)
+            elif self.expect("LEFT_PAREN"):
+                ast = self.parse_funcall(ident)
+                self.advance()
+                return ast
+            elif self.expect("LEFT_BRACKET"):
+                ast = self.parse_index(ident)
+                if not self.is_eof() and self.expect("SEMI_COLON"):
+                    self.advance()
+                    return ast
+                raise Exception("Syntax Error: Missing ';'")
         elif self.expect("SAY"):
             return self.parse_say()
         elif self.expect("IF"):
@@ -344,11 +384,17 @@ class Parser:
             return self.parse_function()
         elif self.expect("RETURN"):
             return self.parse_return()
+        elif self.expect("LEFT_BRACKET"):
+            ast = self.parse_list()
+            if not self.is_eof() and self.expect("SEMI_COLON"):
+                self.advance()
+                return ast
+            raise Exception("Syntax Error: Expected ';'")
         else:
             raise Exception(f"Syntax Error: Unknown token: '{self.current().value}', at {self.position}")
     def parse(self):
         while not self.is_eof():
             self.statements.append(self.parse_statement())
-        #print(self.statements)
+        print(self.statements)
         return Program(self.statements)
-          
+        

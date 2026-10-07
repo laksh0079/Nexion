@@ -30,7 +30,9 @@ class Lexer:
         "{": "LEFT_BRACE",
         "}": "RIGHT_BRACE",
         ",": "COMMA",
-        "_": "UNDERSCORE"
+        "_": "UNDERSCORE",
+        "[": "LEFT_BRACKET",
+        "]": "RIGHT_BRACKET"
     }
     
     def __init__(self, source):
@@ -103,7 +105,6 @@ class Lexer:
     def scan_tokens(self):
         while not self.is_eof():
             if self.current() == "/" and self.peek() == "/":
-                print("hey")
                 while not self.is_eof() and not self.current() == "\n":
                     self.advance()
             elif self.current().isspace():

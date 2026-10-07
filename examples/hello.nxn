@@ -1,271 +1,113 @@
-say("=== TEST 1: Basic Block Scope ===");
+// ===== NEXION FINAL BOSS =====
 
-let x = 10;
-
-{
-    let x = 20;
-    say(x);
-
-    {
-        let x = 30;
-        say(x);
-    }
-
-    say(x);
-}
-
-say(x);
-
-
-say("=== TEST 2: Block Assignment To Parent ===");
-
-let total = 100;
-
-{
-    total = 200;
-    say(total);
-}
-
-say(total);
-
-
-say("=== TEST 3: IF Scope ===");
-
-let value = 10;
-
-if (true) {
-    let value = 999;
-    say(value);
-}
-
-say(value);
-
-
-say("=== TEST 4: ELSE Scope ===");
-
-let status = "outside";
-
-if (false) {
-    let status = "if";
-    say(status);
-} else {
-    let status = "else";
-    say(status);
-}
-
-say(status);
-
-
-say("=== TEST 5: Nested IF Scopes ===");
-
-let n = 5;
-
-if (true) {
-    let n = 10;
-
-    if (true) {
-        let n = 20;
-        say(n);
-    }
-
-    say(n);
-}
-
-say(n);
-
-
-say("=== TEST 6: WHILE Scope ===");
-
-let i = 0;
-
-while (i < 3) {
-    let temporary = i;
-    say(temporary);
-    i = i + 1;
-}
-
-say(i);
-
-
-say("=== TEST 7: Function Scope ===");
-
-let x = 50;
-
-fun test() {
-    let x = 100;
-    say(x);
-
-    {
-        let x = 200;
-        say(x);
-    }
-
-    say(x);
-}
-
-test();
-
-say(x);
-
-
-say("=== TEST 8: Function Modifying Caller Variable ===");
-
-let counter = 10;
-
-fun modify() {
-    counter = 999;
-}
-
-modify();
-
-say(counter);
-
-
-say("=== TEST 9: Function + Nested Block ===");
-
-let value = 1;
-
-fun nested() {
-    let value = 2;
-
-    {
-        let value = 3;
-        say(value);
-    }
-
-    say(value);
-}
-
-nested();
-
-say(value);
-
-
-say("=== TEST 10: RETURN Scope Restoration ===");
-
-let x = 100;
-
-fun early() {
-    let x = 200;
-
-    if (true) {
-        let x = 300;
-        return x;
-    }
-}
-
-say(early());
-say(x);
-
-
-say("=== TEST 11: Recursive Scope ===");
-
-fun countdown(n) {
-    if (n <= 0) {
-        return 0;
+fun factorial(n) {
+    if (n <= 1) {
+        return 1;
     } else {
-        let current = n;
-        say(current);
-        return countdown(n - 1);
+        return n * factorial(n - 1);
     }
 }
 
-countdown(3);
+fun process(data, limit) {
+    let total = 0;
+    let i = 0;
 
-
-say("=== TEST 12: NEXT + Scope ===");
-
-let i = 0;
-
-while (i < 4) {
-    i = i + 1;
-
-    {
-        let temp = i;
-
+    while (i < limit) {
         if (i == 2) {
+            i = i + 1;
             next;
         }
 
-        say(temp);
-    }
-}
-
-say(i);
-
-
-say("=== TEST 13: EXIT + Scope ===");
-
-let j = 0;
-
-while (j < 10) {
-    j = j + 1;
-
-    {
-        let temp = j;
-
-        if (j == 3) {
-            exit;
+        if (data[i] > 10 and not (data[i] == 20)) {
+            total = total + data[i];
+        } else {
+            total = total + 1;
         }
 
-        say(temp);
+        i = i + 1;
     }
+
+    return total;
 }
 
-say(j);
+let nums = [5, 15, 20, 25, 30];
+let matrix = [[1, 2], [3, 4]];
+let cube = [[[1, 2], [3, 4]], [[5, 6], [7, 8]]];
 
+say("=== NEXION STRESS TEST ===");
 
-say("=== TEST 14: Same Name Everywhere ===");
+say(nums[0]);
+say(nums[4]);
+say(matrix[0][1]);
+say(matrix[1][0]);
+say(cube[1][0][1]);
 
-let a = 1;
+let x = 10;
+let y = 5;
 
-{
-    let a = 2;
+if (x > y and not (x == y)) {
+    say("comparison works");
 
     {
-        let a = 3;
-
-        if (true) {
-            let a = 4;
-
-            {
-                let a = 5;
-                say(a);
-            }
-
-            say(a);
-        }
-
-        say(a);
+        let inner = 100;
+        x = x + inner;
+        say(inner);
     }
 
-    say(a);
+    say(x);
+} else {
+    say("comparison failed");
 }
 
-say(a);
-
-
-say("=== TEST 15: FINAL OUTER VARIABLE ===");
-
-let result = 500;
-
-fun complicated() {
-    let result = 600;
-
-    {
-        let result = 700;
-
-        if (true) {
-            let result = 800;
-            say(result);
-        }
-
-        say(result);
+while (y > 0) {
+    if (y == 3) {
+        y = y - 1;
+        next;
     }
 
-    say(result);
+    say(y);
+    y = y - 1;
 }
 
-complicated();
-
+let result = factorial(5);
 say(result);
+
+let processed = process(nums, 5);
+say(processed);
+
+say(factorial(nums[0]));
+
+let nested = [[10, 20], [30, 40]];
+say(nested[1][1]);
+
+
+let flag = true;
+let other = false;
+let nothing = none;
+
+if (flag or other) {
+    say("boolean logic works");
+}
+
+if (not other) {
+    say("unary not works");
+}
+
+say(nothing);
+
+let empty = [];
+say(empty);
+
+// function call using indexed arguments
+say(process([11, 12, 13, 14, 15], 5));
+
+// deep nesting + arithmetic
+say(cube[1][1][0] + cube[0][0][1] * 2);
+
+// reassignment
+x = x + 50;
+y = 999;
+say(x);
+say(y);
+
+say("=== TEST COMPLETE ===");

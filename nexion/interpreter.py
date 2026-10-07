@@ -1,7 +1,7 @@
 from AST.program import Program
 from AST.statements import LetStatement, AssignStatement, SayStatement, IfStatement, Block, Scope, WhileStatement, NextStatement, ExitStatement, Function, FunCall, ReturnStatement
 from AST.exceptions import NextSignal, ExitSignal, ReturnSignal
-from AST.expressions import StringLiteral, NumberLiteral, Identifier, BinaryExpression, BooleanLiteral, UnaryExpression, NoneLiteral
+from AST.expressions import StringLiteral, NumberLiteral, Identifier, BinaryExpression, BooleanLiteral, UnaryExpression, NoneLiteral, ListLiteral, IndexExpression
 from operators import OPERATOR_BEHAVIOUR, UNARY_BEHAVIOUR
 class Interpreter:
     
@@ -39,7 +39,7 @@ class Interpreter:
             value = self.evaluate(node.value)
             self.current_scope.variables[name] = value
         elif type(node) is AssignStatement:
-            name = node.variable.name
+            name = node.variable.name.name
             lookup_scope = self.current_scope
             while lookup_scope is not None:
                 if name in lookup_scope.variables:
@@ -123,6 +123,8 @@ class Interpreter:
                     raise Exception("Runtime Error: Cannot Perform Mathematical operations on 'none'")
             #print("EVAL:", left, node.root, right)
             return self.apply_operator(left, node.root, right)
+        elif type(node) is ListLiteral:
+            return [self.evaluate(element) for element in node.elements]
         elif type(node) is BooleanLiteral:
             return node.value
         elif type(node) is UnaryExpression:
@@ -131,11 +133,11 @@ class Interpreter:
         elif type(node) is NoneLiteral:
             return node.value
         elif isinstance(node, FunCall):
-             if not node.name in self.functions:
+             if not node.name.name in self.functions:
                 raise Exception(f"Runtime Error: The Function {node.name} Does Not Exist")
             #arguments = node.arguments
              var_list = {}
-             func = self.functions[node.name]
+             func = self.functions[node.name.name]
              if len(func.parameters) != len(node.arguments):
                  raise Exception("Runtime Error: The lengths of the given parameters and arguments do not match.")
              for p, a in zip(func.parameters, node.arguments):
@@ -149,11 +151,24 @@ class Interpreter:
                  return r.value
              finally:
                  self.current_scope = previous_scope
+        elif type(node) is IndexExpression:
+            target = self.evaluate(node.target)
+            index = self.evaluate(node.index)
+            if not type(index) is int:
+                raise Exception("Runtime Error: Index Can Only Be Of Type Int")
+            if not type(target) is list:
+                raise Exception("Runtime Error: Value is not Indexable")
+            if 0 <= index < len(target):
+                return target[index]
+            else:
+                raise Exception("Runtime Erorr: Index Out of Range")
+            
         
             
             
     def run(self):
         self.index_functions(self.root)
+        print(self.functions)
         try:
             self.execute(self.root) 
         except ExitSignal:

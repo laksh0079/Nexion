@@ -1,10 +1,21 @@
 from AST.program import Program
 from AST.statements import LetStatement, AssignStatement, SayStatement, IfStatement, Block, Scope, WhileStatement, NextStatement, ExitStatement, Function, FunCall, ReturnStatement
-from AST.exceptions import NextSignal, ExitSignal, ReturnSignal
-from AST.expressions import StringLiteral, NumberLiteral, Identifier, BinaryExpression, BooleanLiteral, UnaryExpression, NoneLiteral, ListLiteral, IndexExpression, IndexAssignment
+from AST.exceptions import NextSignal, ExitSignal, ReturnSignal, UnknownTypeError
+from AST.expressions import StringLiteral, NumberLiteral, Identifier, BinaryExpression, BooleanLiteral, UnaryExpression, NoneLiteral, ListLiteral, IndexExpression, IndexAssignment, DictLiteral
 from operators import OPERATOR_BEHAVIOUR, UNARY_BEHAVIOUR
 class Interpreter:
-    
+    def get_type(self, value):
+        types = {
+            int: "int",
+            str: "string",
+            bool: "boolean",
+            type(None): "none",
+            list: "list"
+        }
+        try:
+            return types[type(value)]
+        except KeyError:
+            raise UnknownTypeError(f"Runtime Error: Unknown Data Type: {type(value).__name__}")
     def __init__(self, root):
         self.root = root
         self.global_scope = Scope({})
@@ -14,7 +25,7 @@ class Interpreter:
         
     def apply_operator(self, left, mid, right):
         if mid in ["+","-","*","/"]:
-            if type(left) is bool or type(right) is bool:
+            if self.get_type(left) == "boolean" or self.get_type(right) == "boolean":
                 raise Exception("Type Error: Cannot use Boolean in Arithmetic")
         if mid in OPERATOR_BEHAVIOUR:
             return OPERATOR_BEHAVIOUR[mid](left, right)
@@ -57,8 +68,8 @@ class Interpreter:
                 print(arg)
         elif type(node) is IfStatement:
             res = self.evaluate(node.condition)
-            if type(res) is not bool:
-                raise Exception(f"Runtime Error: If condition must be boolean, got {type(res).__name__}")
+            if self.get_type(res) != "boolean":
+                raise Exception(f"Runtime Error: If condition must be boolean, got {self.get_type(res)}")
             if res:
                 
                 self.execute(node.statements)
@@ -79,8 +90,8 @@ class Interpreter:
         elif type(node) is WhileStatement:
             while True:
                 condition = self.evaluate(node.condition)
-                if type(condition) is not bool:
-                    raise Exception(f"Runtime Error: While condition must be boolean, got {type(condition).__name__}")
+                if not self.get_type(condition) == "boolean":
+                    raise Exception(f"Runtime Error: While condition must be boolean, got {self.get_type(condition)}")
                 if condition:
                     try:
                         self.execute(node.statements)
@@ -121,7 +132,7 @@ class Interpreter:
             left = self.evaluate(node.left)
             right = self.evaluate(node.right)
             if node.root in self.MATH_OPERATORS:
-                if left is None or right is None:
+                if self.get_type(left) == "none" or self.get_type(right) == "none":
                     raise Exception("Runtime Error: Cannot Perform Mathematical operations on 'none'")
             #print("EVAL:", left, node.root, right)
             return self.apply_operator(left, node.root, right)
@@ -134,6 +145,11 @@ class Interpreter:
             return self.apply_unary(node.operator, operand)
         elif type(node) is NoneLiteral:
             return node.value
+        elif type(node) is DictLiteral:
+            entries = {}
+            for sublist in node.entries:
+                entries[self.evaluate(sublist[0])] = self.evaluate(sublist[1])
+            return entries
         elif isinstance(node, FunCall):
              if not node.name.name in self.functions:
                 raise Exception(f"Runtime Error: The Function {node.name} Does Not Exist")
@@ -156,9 +172,9 @@ class Interpreter:
         elif type(node) is IndexExpression:
             target = self.evaluate(node.target.target)
             index = self.evaluate(node.index)
-            if not type(index) is int:
+            if not self.get_type(index) == "int":
                 raise Exception("Runtime Error: Index Can Only Be Of Type Int")
-            if not type(target) is list:
+            if not self.get_type(target) == "list":
                 raise Exception("Runtime Error: Value is not Indexable")
             if 0 <= index < len(target):
                 return target[index]

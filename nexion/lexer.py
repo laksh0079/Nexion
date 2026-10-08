@@ -32,7 +32,8 @@ class Lexer:
         ",": "COMMA",
         "_": "UNDERSCORE",
         "[": "LEFT_BRACKET",
-        "]": "RIGHT_BRACKET"
+        "]": "RIGHT_BRACKET",
+        ":": "COLON"
     }
     
     def __init__(self, source):

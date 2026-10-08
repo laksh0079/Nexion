@@ -1,6 +1,6 @@
 from AST.statements import LetStatement, AssignStatement, SayStatement, IfStatement, Block, WhileStatement, ExitStatement, NextStatement, Function, FunCall, ReturnStatement
 from AST.program import Program
-from AST.expressions import NumberLiteral, StringLiteral, Identifier, BinaryExpression, BooleanLiteral, UnaryExpression, NoneLiteral, ListLiteral, IndexExpression, IndexAssignment
+from AST.expressions import NumberLiteral, StringLiteral, Identifier, BinaryExpression, BooleanLiteral, UnaryExpression, NoneLiteral, ListLiteral, IndexExpression, IndexAssignment, DictLiteral
 from operators import PRECEDENCE,BINARY_OPERATORS
 class Parser:
     def __init__(self, tokens):
@@ -17,7 +17,14 @@ class Parser:
             "NOT",
             "NONE",
             "MINUS",
-            "LEFT_BRACKET"
+            "LEFT_BRACKET",
+            "LEFT_BRACE"
+        ]
+        self.valid_dict_keys = [
+            "NUMBER",
+            "STRING",
+            "TRUE",
+            "FALSE"
         ]
     
     def is_eof(self):
@@ -71,6 +78,9 @@ class Parser:
             return NoneLiteral()
         elif self.expect("LEFT_BRACKET"):
             return self.parse_list()
+        elif self.expect("LEFT_BRACE"):
+            self.advance() #consune { initially
+            return self.parse_dict()
         else:
             raise Exception(f"Syntax Error: Expected expression, found {self.current().value}")
             
@@ -96,9 +106,9 @@ class Parser:
         self.advance() #consuming } at the end
         return Block(statements)
         
-    def parse_binaryexpr(self, left, op, right, end_token):
+    def parse_binaryexpr(self, left, op, right):
        return BinaryExpression(left, op, right)
-    def parse_expression(self, end_token, min_prec=0):
+    def parse_expression(self, *end_tokens, min_prec=0):
         if not self.is_eof() and self.expect(*self.valid_expr_start):
             currToken = self.parse_primary()
             
@@ -107,10 +117,10 @@ class Parser:
                 if PRECEDENCE[op] <= min_prec:
                     return currToken
                 self.advance()
-                right = self.parse_expression(end_token, PRECEDENCE[op])
-                currToken = self.parse_binaryexpr(currToken, op, right, end_token)
+                right = self.parse_expression(*end_tokens, min_prec=PRECEDENCE[op])
+                currToken = self.parse_binaryexpr(currToken, op, right)
             if not self.is_eof():
-                if self.expect(end_token):
+                if self.expect(*end_tokens):
                     return currToken
                 return currToken
             else:
@@ -330,10 +340,10 @@ class Parser:
             self.advance()
             return ListLiteral()
         elif not self.is_eof() and self.expect(*self.valid_expr_start):
-            elements.append(self.parse_primary())
+            elements.append(self.parse_expression("COMMA", "RIGHT_BRACKET"))
             while not self.is_eof() and (self.expect("COMMA")):
                 self.advance()
-                elements.append(self.parse_primary())
+                elements.append(self.parse_expression("COMMA", "RIGHT_BRACKET"))
             if not self.is_eof() and self.expect("RIGHT_BRACKET"):
                 self.advance()
                 return ListLiteral(elements)
@@ -356,9 +366,31 @@ class Parser:
             return IndexAssignment(target, value) 
         else:
             raise Exception("Syntax error: Expected an Expression.")
+    def parse_dict(self, entries=None):
+        if entries is None:
+            entries = []
+        if self.expect("RIGHT_BRACE") and entries is None:
+            self.advance()
+            return DictLiteral()
+        if not self.is_eof() and not self.expect(*self.valid_dict_keys):
+            raise Exception("Syntax Error: Dictionary keys must be a number, string, or boolean.")
+        key = self.parse_primary()
         
+        if not self.is_eof() and not self.expect("COLON"):
+            raise Exception("Syntax Error: Expected ':' after dictionary key.")
+        self.advance()
         
-        
+        if not self.is_eof() and not self.expect(*self.valid_expr_start):
+            raise Exception("Syntax Error: Expected a value after ':'.")
+        value = self.parse_expression("COMMA", "RIGHT_BRACE")
+        entries.append([key, value])
+        if not self.is_eof() and self.expect("COMMA"):
+            self.advance()
+            return self.parse_dict(entries)
+        if not self.is_eof() and self.expect("RIGHT_BRACE"):
+            self.advance()
+            return DictLiteral(entries)
+        raise Exception("Syntax Error: Missing '}'")
     def parse_statement(self):
         if self.expect("LET"):
             return self.parse_let()

@@ -6,3 +6,6 @@ class NextSignal(Exception):
 class ReturnSignal(Exception):
     def __init__(self, value=None):
         self.value = value
+        
+class UnknownTypeError(Exception):
+    pass

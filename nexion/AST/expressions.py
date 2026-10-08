@@ -66,3 +66,9 @@ class IndexAssignment:
         self.value = value
     def __repr__(self):
         return f"{self.target} = {self.value}"
+        
+class DictLiteral:
+    def __init__(self, entries=[]):
+        self.entries = entries
+    def __repr__(self):
+        return f"Entries: {self.entries}"

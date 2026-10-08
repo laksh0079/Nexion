@@ -1,7 +1,7 @@
 from AST.program import Program
 from AST.statements import LetStatement, AssignStatement, SayStatement, IfStatement, Block, Scope, WhileStatement, NextStatement, ExitStatement, Function, FunCall, ReturnStatement
 from AST.exceptions import NextSignal, ExitSignal, ReturnSignal
-from AST.expressions import StringLiteral, NumberLiteral, Identifier, BinaryExpression, BooleanLiteral, UnaryExpression, NoneLiteral, ListLiteral, IndexExpression
+from AST.expressions import StringLiteral, NumberLiteral, Identifier, BinaryExpression, BooleanLiteral, UnaryExpression, NoneLiteral, ListLiteral, IndexExpression, IndexAssignment
 from operators import OPERATOR_BEHAVIOUR, UNARY_BEHAVIOUR
 class Interpreter:
     
@@ -101,7 +101,9 @@ class Interpreter:
             raise ReturnSignal(return_val)
         elif type(node) is FunCall:
             self.evaluate(node)
-      
+        elif type(node) is IndexAssignment:
+            self.evaluate(node)
+ 
     def evaluate(self, node):
         if type(node) is StringLiteral:
             return node.string
@@ -152,7 +154,7 @@ class Interpreter:
              finally:
                  self.current_scope = previous_scope
         elif type(node) is IndexExpression:
-            target = self.evaluate(node.target)
+            target = self.evaluate(node.target.target)
             index = self.evaluate(node.index)
             if not type(index) is int:
                 raise Exception("Runtime Error: Index Can Only Be Of Type Int")
@@ -162,13 +164,12 @@ class Interpreter:
                 return target[index]
             else:
                 raise Exception("Runtime Erorr: Index Out of Range")
-            
-        
-            
+        elif type(node) is IndexAssignment:
+            target = self.evaluate(node.target.target)
+            target[self.evaluate(node.target.index)] = self.evaluate(node.value)
             
     def run(self):
         self.index_functions(self.root)
-        print(self.functions)
         try:
             self.execute(self.root) 
         except ExitSignal:

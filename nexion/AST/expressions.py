@@ -59,3 +59,10 @@ class IndexExpression:
         
     def __repr__(self):
         return f"{self.target}[{self.index}]"
+       
+class IndexAssignment:
+    def __init__(self, target, value):
+        self.target = target
+        self.value = value
+    def __repr__(self):
+        return f"{self.target} = {self.value}"

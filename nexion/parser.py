@@ -1,6 +1,6 @@
 from AST.statements import LetStatement, AssignStatement, SayStatement, IfStatement, Block, WhileStatement, ExitStatement, NextStatement, Function, FunCall, ReturnStatement
 from AST.program import Program
-from AST.expressions import NumberLiteral, StringLiteral, Identifier, BinaryExpression, BooleanLiteral, UnaryExpression, NoneLiteral, ListLiteral, IndexExpression
+from AST.expressions import NumberLiteral, StringLiteral, Identifier, BinaryExpression, BooleanLiteral, UnaryExpression, NoneLiteral, ListLiteral, IndexExpression, IndexAssignment
 from operators import PRECEDENCE,BINARY_OPERATORS
 class Parser:
     def __init__(self, tokens):
@@ -342,7 +342,6 @@ class Parser:
             
     def parse_index(self, target):
         while not self.is_eof() and self.expect("LEFT_BRACKET"):
-            print(self.current().type)
             self.advance()
             target = IndexExpression(target, self.parse_primary())
             if self.is_eof() or not self.expect("RIGHT_BRACKET"):
@@ -350,6 +349,16 @@ class Parser:
             self.advance()
         return target
                 
+    def parse_index_assignment(self, target):
+        self.advance()
+        if (not self.is_eof() and self.expect(*self.valid_expr_start)):
+            value = self.parse_primary()
+            return IndexAssignment(target, value) 
+        else:
+            raise Exception("Syntax error: Expected an Expression.")
+        
+        
+        
     def parse_statement(self):
         if self.expect("LET"):
             return self.parse_let()
@@ -366,6 +375,12 @@ class Parser:
                 return ast
             elif self.expect("LEFT_BRACKET"):
                 ast = self.parse_index(ident)
+                if not self.is_eof() and self.expect("ASSIGN"):
+                    ast = self.parse_index_assignment(ast)
+                    if not self.is_eof() and not self.expect("SEMI_COLON"):
+                        raise Exception("Syntax Error: Missing ';'")
+                    self.advance()
+                    return ast
                 if not self.is_eof() and self.expect("SEMI_COLON"):
                     self.advance()
                     return ast

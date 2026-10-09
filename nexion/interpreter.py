@@ -1,32 +1,24 @@
 from AST.program import Program
 from AST.statements import LetStatement, AssignStatement, SayStatement, IfStatement, Block, Scope, WhileStatement, NextStatement, ExitStatement, Function, FunCall, ReturnStatement
-from AST.exceptions import NextSignal, ExitSignal, ReturnSignal, UnknownTypeError
+from AST.exceptions import NextSignal, ExitSignal, ReturnSignal
 from AST.expressions import StringLiteral, NumberLiteral, Identifier, BinaryExpression, BooleanLiteral, UnaryExpression, NoneLiteral, ListLiteral, IndexExpression, IndexAssignment, DictLiteral, SliceExpression
 from operators import OPERATOR_BEHAVIOUR, UNARY_BEHAVIOUR
+from stdlib import length, get_type, to_string
 class Interpreter:
-    def get_type(self, value):
-        types = {
-            int: "int",
-            str: "string",
-            bool: "boolean",
-            type(None): "none",
-            list: "list",
-            dict: "dict"
-        }
-        try:
-            return types[type(value)]
-        except KeyError:
-            raise UnknownTypeError(f"Runtime Error: Unknown Data Type: {type(value).__name__}")
     def __init__(self, root):
         self.root = root
         self.global_scope = Scope({})
         self.current_scope = self.global_scope
-        self.functions = {}
+        self.functions = {
+            "length": length,
+            "typeOf": get_type,
+            "toString": to_string
+       }
         self.MATH_OPERATORS = {"+", "-", "*", "/", "%"}
         
     def apply_operator(self, left, mid, right):
         if mid in ["+","-","*","/"]:
-            if self.get_type(left) == "boolean" or self.get_type(right) == "boolean":
+            if get_type(left) == "boolean" or get_type(right) == "boolean":
                 raise Exception("Type Error: Cannot use Boolean in Arithmetic")
         if mid in OPERATOR_BEHAVIOUR:
             return OPERATOR_BEHAVIOUR[mid](left, right)
@@ -43,18 +35,18 @@ class Interpreter:
                     self.functions[statement.name] = statement
     
     def validate_index(self, target, index):
-        if not self.get_type(target) in ["list", "dict", "string"]:
-                raise Exception(f"Runtime Error: '{self.get_type(target)}' is not indexable")
-        if self.get_type(target) == "list":
-            if not self.get_type(index) == "int":
+        if not get_type(target) in ["list", "dict", "string"]:
+                raise Exception(f"Runtime Error: '{get_type(target)}' is not indexable")
+        if get_type(target) == "list":
+            if not get_type(index) == "int":
                 raise Exception("Runtime Error: Index Can Only Be Of Type Int")
             if not 0 <= index < len(target):
                 raise Exception("Runtime Error: Index Out of Range")
-        elif self.get_type(target) == "dict":
-            if not self.get_type(index) in ["boolean", "int", "string"]:
+        elif get_type(target) == "dict":
+            if not get_type(index) in ["boolean", "int", "string"]:
                 raise Exception("Runtime Error: Dictionary key can only be of type string, int and boolean")
-        elif self.get_type(target) == "string":
-            if not self.get_type(index) == "int":
+        elif get_type(target) == "string":
+            if not get_type(index) == "int":
                 raise Exception("Runtime Error: Index Can Only Be Of Type Int")
             if not 0 <= index < len(target):
                 raise Exception("Runtime Error: Index Out of Range")
@@ -91,8 +83,8 @@ class Interpreter:
                 print(arg)
         elif type(node) is IfStatement:
             res = self.evaluate(node.condition)
-            if self.get_type(res) != "boolean":
-                raise Exception(f"Runtime Error: If condition must be boolean, got {self.get_type(res)}")
+            if get_type(res) != "boolean":
+                raise Exception(f"Runtime Error: If condition must be boolean, got {get_type(res)}")
             if res:
                 
                 self.execute(node.statements)
@@ -113,8 +105,8 @@ class Interpreter:
         elif type(node) is WhileStatement:
             while True:
                 condition = self.evaluate(node.condition)
-                if not self.get_type(condition) == "boolean":
-                    raise Exception(f"Runtime Error: While condition must be boolean, got {self.get_type(condition)}")
+                if not get_type(condition) == "boolean":
+                    raise Exception(f"Runtime Error: While condition must be boolean, got {get_type(condition)}")
                 if condition:
                     try:
                         self.execute(node.statements)
@@ -155,11 +147,11 @@ class Interpreter:
             left = self.evaluate(node.left)
             right = self.evaluate(node.right)
             if node.root == "in":
-                if self.get_type(right) not in ["list", "dict"]:
-                    raise Exception("Runtime Error: Right operand of 'in' must be a list or dictionary")
+                if get_type(right) not in ["list", "dict", "string"]:
+                    raise Exception("Runtime Error: Right operand of 'in' must be a list, dictionary or string")
                 
             if node.root in self.MATH_OPERATORS:
-                if self.get_type(left) == "none" or self.get_type(right) == "none":
+                if get_type(left) == "none" or get_type(right) == "none":
                     raise Exception("Runtime Error: Cannot Perform Mathematical operations on 'none'")
             #print("EVAL:", left, node.root, right)
             return self.apply_operator(left, node.root, right)
@@ -178,32 +170,39 @@ class Interpreter:
                 entries[self.evaluate(sublist[0])] = self.evaluate(sublist[1])
             return entries
         elif isinstance(node, FunCall):
-             if not node.name.name in self.functions:
-                raise Exception(f"Runtime Error: The Function {node.name} Does Not Exist")
-            #arguments = node.arguments
-             var_list = {}
-             func = self.functions[node.name.name]
-             if len(func.parameters) != len(node.arguments):
-                 raise Exception("Runtime Error: The lengths of the given parameters and arguments do not match.")
-             for p, a in zip(func.parameters, node.arguments):
-                 var_list[p.name] = self.evaluate(a)
-             previous_scope = self.current_scope
-             self.current_scope = Scope(var_list, previous_scope)
-
-             try:
-                 self.execute(func.statements)
-             except ReturnSignal as r:
-                 return r.value
-             finally:
-                 self.current_scope = previous_scope
+            func = self.functions[node.name.name]
+            func_name = node.name.name
+            if func_name not in self.functions:
+                raise Exception(f"Runtime Error: The Function {func_name} Does Not Exist")
+            func = self.functions[func_name]
+            if callable(func):
+                arguments = [self.evaluate(argument) for argument in node.arguments]
+                return func(*arguments)
+            else:
+                #if not func in self.functions:
+                   # raise Exception(f"Runtime Error: The Function {node.name} Does Not Exist")
+                    #arguments = node.arguments
+                var_list = {}
+                if len(func.parameters) != len(node.arguments):
+                    raise Exception("Runtime Error: The lengths of the given parameters and arguments do not match.")
+                for p, a in zip(func.parameters, node.arguments):
+                    var_list[p.name] = self.evaluate(a)
+                previous_scope = self.current_scope
+                self.current_scope = Scope(var_list, previous_scope)
+                try:
+                    self.execute(func.statements)
+                except ReturnSignal as r:
+                    return r.value
+                finally:
+                    self.current_scope = previous_scope
         elif type(node) is IndexExpression:
             target = self.evaluate(node.target)
             index = self.evaluate(node.index)
             
             self.validate_index(target, index)
-            if self.get_type(target) in ["list", "string"]:
+            if get_type(target) in ["list", "string"]:
                 return target[index]
-            elif self.get_type(target) == "dict":
+            elif get_type(target) == "dict":
                 if index not in target:
                     raise Exception("Runtime Error: Dictionary Key Not Found")
                 return target[index]
@@ -217,7 +216,7 @@ class Interpreter:
             target = self.evaluate(node.target)
             start = self.evaluate(node.start)
             end = self.evaluate(node.end)
-            if self.get_type(target) not in ["list", "string"]:
+            if get_type(target) not in ["list", "string"]:
                 raise Exception("Runtime Error: Index Slicing Can Only Be Done On Type: List or String")
             try:
                 if start is None and end is None:

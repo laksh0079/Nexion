@@ -9,7 +9,7 @@ else:
     filename = "/storage/emulated/0/nexion/examples/hello.nxn"
 
 source = open(filename).read()
-print(source)
+#print(source)
 lexer = Lexer(source)
 try:
     tokens = lexer.scan_tokens()

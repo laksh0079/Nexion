@@ -43,47 +43,47 @@ class Parser:
     def expect(self, *expected):
         return self.current().type in expected
     def parse_primary(self):
+        expr = None
         if self.expect("NUMBER"):
             value = self.current().value
             self.advance()
-            return NumberLiteral(value)
+            expr = NumberLiteral(value)
         elif self.expect("NOT"):
             self.advance()
             operand = self.parse_primary()
-            return UnaryExpression("not", operand)
+            expr = UnaryExpression("not", operand)
         elif self.expect("MINUS"):
             self.advance()
             operand = self.parse_primary()
-            return UnaryExpression("minus", operand)
+            expr = UnaryExpression("minus", operand)
         elif self.expect("STRING"):
             value = self.current().value
             self.advance()
-            return StringLiteral(value)
+            expr = StringLiteral(value)
         elif self.expect("IDENTIFIER"):
             ident = Identifier(self.current().value)
+            expr = ident
             self.advance()
             if self.expect("LEFT_PAREN"):
-                return self.parse_funcall(ident)
-            elif self.expect("LEFT_BRACKET"):
-                return self.parse_index(ident)
-            return ident
+                expr = self.parse_funcall(ident)
         elif self.expect("TRUE", "FALSE"):
             value = self.current().type == "TRUE"
             self.advance()
-            return BooleanLiteral(value)
+            expr = BooleanLiteral(value)
         elif self.expect("LEFT_PAREN"):
-            return self.parse_paren()
+            expr = self.parse_paren()
         elif self.expect("NONE"):
             self.advance()
-            return NoneLiteral()
+            expr = NoneLiteral()
         elif self.expect("LEFT_BRACKET"):
-            return self.parse_list()
+            expr = self.parse_list()
         elif self.expect("LEFT_BRACE"):
             self.advance() #consune { initially
-            return self.parse_dict()
+            expr = self.parse_dict()
         else:
             raise Exception(f"Syntax Error: Expected expression, found {self.current().value}")
-            
+        return self.parse_postfix(expr)
+        
     def parse_paren(self):
         self.advance()
         expr = self.parse_expression("RIGHT_PAREN")
@@ -353,12 +353,16 @@ class Parser:
     def parse_index(self, target):
         while not self.is_eof() and self.expect("LEFT_BRACKET"):
             self.advance()
-            target = IndexExpression(target, self.parse_primary())
+            target = IndexExpression(target, self.parse_expression("RIGHT_BRACKET"))
             if self.is_eof() or not self.expect("RIGHT_BRACKET"):
                 raise Exception("Syntax Error: Missing ']'")
             self.advance()
         return target
                 
+    def parse_postfix(self, expr):
+        if not self.is_eof() and self.expect("LEFT_BRACKET"):
+            return self.parse_index(expr)
+        return expr
     def parse_index_assignment(self, target):
         self.advance()
         if (not self.is_eof() and self.expect(*self.valid_expr_start)):
@@ -369,10 +373,11 @@ class Parser:
     def parse_dict(self, entries=None):
         if entries is None:
             entries = []
-        if self.expect("RIGHT_BRACE") and entries is None:
+        if self.expect("RIGHT_BRACE") and entries in [None, []]:
             self.advance()
             return DictLiteral()
         if not self.is_eof() and not self.expect(*self.valid_dict_keys):
+            print("key: ", self.current())
             raise Exception("Syntax Error: Dictionary keys must be a number, string, or boolean.")
         key = self.parse_primary()
         

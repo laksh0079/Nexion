@@ -1,2 +1,7 @@
-let a = {"name": 10, 42: 20, true: 30};
-say(a);
+let a = [1,2,3];
+say(1 in a);
+say(4 in a);
+a = {"name": "xyz", "rollno": 3};
+say("name" in a);
+say("xyz" in a);
+say("rollno" in 1);

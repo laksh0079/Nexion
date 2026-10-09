@@ -10,7 +10,8 @@ class Interpreter:
             str: "string",
             bool: "boolean",
             type(None): "none",
-            list: "list"
+            list: "list",
+            dict: "dict"
         }
         try:
             return types[type(value)]
@@ -40,7 +41,21 @@ class Interpreter:
             for statement in node.statements:
                 if type(statement) is Function:
                     self.functions[statement.name] = statement
-        
+    
+    def validate_index(self, target, index):
+        if not self.get_type(target) in ["list", "dict"]:
+                raise Exception(f"Runtime Error: '{self.get_type(target)}' is not indexable")
+        if self.get_type(target) == "list":
+            if not self.get_type(index) == "int":
+                raise Exception("Runtime Error: Index Can Only Be Of Type Int")
+            if not 0 <= index < len(target):
+                raise Exception("Runtime Error: Index Out of Range")
+        elif self.get_type(target) == "dict":
+            if not self.get_type(index) in ["boolean", "int", "string"]:
+                raise Exception("Runtime Error: Dictionary key can only be of type string, int and boolean")
+            
+    
+    
     def execute(self, node):
         if type(node) is Program:
             for statement in node.statements:
@@ -64,6 +79,10 @@ class Interpreter:
             arg = self.evaluate(node.value)
             if (arg is None):
                 print("none")
+            elif arg is True:
+                print("true")
+            elif arg is False:
+                print("false")
             else:
                 print(arg)
         elif type(node) is IfStatement:
@@ -131,6 +150,10 @@ class Interpreter:
         elif type(node) is BinaryExpression:
             left = self.evaluate(node.left)
             right = self.evaluate(node.right)
+            if node.root == "in":
+                if self.get_type(right) not in ["list", "dict"]:
+                    raise Exception("Runtime Error: Right operand of 'in' must be a list or dictionary")
+                
             if node.root in self.MATH_OPERATORS:
                 if self.get_type(left) == "none" or self.get_type(right) == "none":
                     raise Exception("Runtime Error: Cannot Perform Mathematical operations on 'none'")
@@ -170,19 +193,22 @@ class Interpreter:
              finally:
                  self.current_scope = previous_scope
         elif type(node) is IndexExpression:
-            target = self.evaluate(node.target.target)
+            target = self.evaluate(node.target)
             index = self.evaluate(node.index)
-            if not self.get_type(index) == "int":
-                raise Exception("Runtime Error: Index Can Only Be Of Type Int")
-            if not self.get_type(target) == "list":
-                raise Exception("Runtime Error: Value is not Indexable")
-            if 0 <= index < len(target):
+            
+            self.validate_index(target, index)
+            if self.get_type(target) == "list":
                 return target[index]
-            else:
-                raise Exception("Runtime Erorr: Index Out of Range")
+            elif self.get_type(target) == "dict":
+                if index not in target:
+                    raise Exception("Runtime Error: Dictionary Key Not Found")
+                return target[index]
+                
         elif type(node) is IndexAssignment:
             target = self.evaluate(node.target.target)
-            target[self.evaluate(node.target.index)] = self.evaluate(node.value)
+            index = self.evaluate(node.target.index)
+            self.validate_index(target, index)
+            target[index] = self.evaluate(node.value)
             
     def run(self):
         self.index_functions(self.root)

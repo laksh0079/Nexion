@@ -18,6 +18,7 @@ PRECEDENCE = {
     "not": 80,
     "==": 85,
     "!=": 85,
+    "in": 90,
     ">": 90,
     ">=": 90,
     "<": 90,
@@ -29,7 +30,7 @@ PRECEDENCE = {
     "%": 100
 }
 
-BINARY_OPERATORS = {"PLUS", "MINUS", "MULTIPLICATION", "DIVISION", "LESS", "GREATER", "LESS_EQUAL", "GREATER_EQUAL", "EQUAL", "NOT_EQUAL", "AND", "OR", "MODULO"}
+BINARY_OPERATORS = {"PLUS", "MINUS", "MULTIPLICATION", "DIVISION", "LESS", "GREATER", "LESS_EQUAL", "GREATER_EQUAL", "EQUAL", "NOT_EQUAL", "AND", "OR", "MODULO", "IN"}
 
 OPERATOR_BEHAVIOUR = {
     "+": lambda a, b: a + b,
@@ -44,7 +45,8 @@ OPERATOR_BEHAVIOUR = {
     "==": lambda a, b: a == b,
     "!=": lambda a, b: a != b,
     "and": lambda left, right: left and right,
-    "or": lambda left, right: left or right
+    "or": lambda left, right: left or right,
+    "in": lambda left, right: left in right
 }
 
 UNARY_BEHAVIOUR = {

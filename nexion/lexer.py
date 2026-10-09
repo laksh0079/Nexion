@@ -20,7 +20,8 @@ class Lexer:
         "next": "NEXT",
         "fun": "FUN",
         "none": "NONE",
-        "return": "RETURN"
+        "return": "RETURN",
+        "in": "IN"
    }
     
     symbols = {

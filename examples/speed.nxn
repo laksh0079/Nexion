@@ -1,9 +1,238 @@
+// ======================================                          // 1. VARIABLES AND BASIC TYPES                                    // ======================================
+
+let number = 10;
+let decimal = 25;
+let text = "Nexion";
+let yes = true;
+let no = false;
+let nothing = none;
+
+say(number);
+say(decimal);
+say(text);
+say(yes);
+say(no);
+say(nothing);
+
+// ======================================
+// 2. REASSIGNMENT AND ARITHMETIC
+// ======================================
+
+number = number + 5;
+say(number);
+
+number = number * 2;
+say(number);
+
+say(10 + 5 * 2);
+say((10 + 5) * 2);
+say(20 / 4);
+say(17 - 8);
+say(10 % 3);
+
+// ======================================
+// 3. COMPARISONS AND LOGICAL OPERATORS
+// ======================================
+
+say(5 == 5);
+say(5 != 3);
+say(5 > 3);
+say(3 < 5);
+say(5 >= 5);
+say(4 <= 5);
+
+say(true and true);
+say(true and false);
+say(false or true);
+say(false or false);
+say(not false);
+say(not true);
+
+// ======================================
+// 4. IF / ELSE IF / ELSE
+// ======================================
+
+let score = 75;
+
+if score >= 90 {
+    say("A");
+} else if score >= 70 {
+    say("B");
+} else {
+    say("C");
+}
+
+if false {
+    say("WRONG");
+} else {
+    say("ELSE WORKS");
+}
+
+// ======================================
+// 5. WHILE LOOPS AND REASSIGNMENT
+// ======================================
+
 let i = 0;
 let total = 0;
 
-while (i < 1000000) {
+while i < 5 {
     total = total + i;
     i = i + 1;
 }
 
+say(i);
 say(total);
+
+// ======================================
+// 6. BLOCK SCOPE
+// ======================================
+
+let outer = 100;
+
+{
+    let inner = 200;
+    say(outer);
+    say(inner);
+}
+
+say(outer);
+
+// ======================================
+// 7. FUNCTIONS AND PARAMETERS
+// ======================================
+
+fun add(a, b) {
+    return a + b;
+}
+
+fun identity(x) {
+    return x;
+}
+
+fun get_list(x) {
+    return x;
+}
+
+fun get_number() {
+    return 42;
+}
+
+say(add(10, 20));
+say(identity("works"));
+say(get_number());
+
+// ======================================
+// 8. RECURSION
+// ======================================
+
+fun factorial(n) {
+    if n <= 1 {
+        return 1;
+    } else {
+        return n * factorial(n - 1);
+    }
+}
+
+say(factorial(5));
+
+// ======================================
+// 9. EXIT AND NEXT
+// ======================================
+
+let j = 0;
+let next_total = 0;
+
+while j < 6 {
+    j = j + 1;
+
+    if j == 2 {
+        next;
+    }
+
+    if j == 5 {
+        exit;
+    }
+
+    next_total = next_total + j;
+}
+
+say(j);
+say(next_total);
+
+// ======================================
+// 10. LISTS AND NESTED LISTS
+// ======================================
+
+let a = [10, 20, 30, 40];
+let b = [[1, 2], [3, 4]];
+let c = [[[100, 200], [300, 400]], [[500, 600], [700, 800]]];
+let empty_list = [];
+
+say(a[0]);
+say(a[3]);
+say(b[1][0]);
+say(c[1][1][1]);
+
+// ======================================
+// 11. LIST ASSIGNMENT
+// ======================================
+
+a[1] = 99;
+b[0][1] = 88;
+
+say(a[1]);
+say(b[0][1]);
+
+// ======================================
+// 12. INDEX EXPRESSIONS
+// ======================================
+
+say(a[1 + 1]);
+say(a[2 * 1]);
+say(b[1][2 - 1]);
+
+// ======================================
+// 13. INDEXING FUNCTION RESULTS
+// ======================================
+
+say(get_list(a)[0]);
+say(get_list(b)[1][0]);
+say(get_list(c)[1][1][1]);
+
+say(get_list([5, 6, 7])[1]);
+say(get_list([[8, 9], [10, 11]])[0][1]);
+
+// ======================================
+// 14. DICTIONARIES
+// ======================================
+
+let person = {
+    "name": "Alex",
+    "age": 21,
+    true: 100
+};
+
+//say(person["name"]);
+//say(person["age"]);
+//say(person[true]);
+
+let empty_dict = {};
+say(empty_dict);
+
+// ======================================
+// 15. MIXED NESTED COLLECTIONS
+// ======================================
+
+let data = {
+    "numbers": [10, 20, 30],
+    "matrix": [[1, 2], [3, 4]]
+};
+
+//say(data["numbers"][1]);
+//say(data["matrix"][0][1]);
+
+// ======================================
+// 16. FINAL CHECK
+// ======================================
+
+say("NEXION REGRESSION TEST COMPLETE");

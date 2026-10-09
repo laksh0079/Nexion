@@ -1,6 +1,6 @@
 from AST.statements import LetStatement, AssignStatement, SayStatement, IfStatement, Block, WhileStatement, ExitStatement, NextStatement, Function, FunCall, ReturnStatement
 from AST.program import Program
-from AST.expressions import NumberLiteral, StringLiteral, Identifier, BinaryExpression, BooleanLiteral, UnaryExpression, NoneLiteral, ListLiteral, IndexExpression, IndexAssignment, DictLiteral
+from AST.expressions import NumberLiteral, StringLiteral, Identifier, BinaryExpression, BooleanLiteral, UnaryExpression, NoneLiteral, ListLiteral, IndexExpression, IndexAssignment, DictLiteral, SliceExpression
 from operators import PRECEDENCE,BINARY_OPERATORS
 class Parser:
     def __init__(self, tokens):
@@ -353,7 +353,25 @@ class Parser:
     def parse_index(self, target):
         while not self.is_eof() and self.expect("LEFT_BRACKET"):
             self.advance()
-            target = IndexExpression(target, self.parse_expression("RIGHT_BRACKET"))
+            if self.expect("COLON"): # if [:] or [:end]
+                self.advance()
+                if not self.is_eof() and self.expect("RIGHT_BRACKET"): #if [:]
+                    target = SliceExpression(target)
+                elif not self.is_eof() and self.expect(*self.valid_expr_start):
+                    target = SliceExpression(target, None, self.parse_expression("RIGHT_BRACKET"))
+            elif self.expect(*self.valid_expr_start): 
+                #if [start:end] or [start:]
+                index = self.parse_expression("COLON", "RIGHT_BRACKET")
+                if not self.is_eof() and self.expect("COLON"):
+                    #if [start:]
+                    self.advance()
+                    if not self.is_eof() and self.expect(*self.valid_expr_start): #if [start:end]
+                        end = self.parse_expression("RIGHT_BRACKET")
+                        target = SliceExpression(target, index, end)
+                    elif not self.is_eof() and self.expect("RIGHT_BRACKET"): #if [start:]
+                        target = SliceExpression(target, index)
+                else:
+                    target = IndexExpression(target, index)
             if self.is_eof() or not self.expect("RIGHT_BRACKET"):
                 raise Exception("Syntax Error: Missing ']'")
             self.advance()
@@ -377,7 +395,6 @@ class Parser:
             self.advance()
             return DictLiteral()
         if not self.is_eof() and not self.expect(*self.valid_dict_keys):
-            print("key: ", self.current())
             raise Exception("Syntax Error: Dictionary keys must be a number, string, or boolean.")
         key = self.parse_primary()
         
@@ -447,6 +464,6 @@ class Parser:
     def parse(self):
         while not self.is_eof():
             self.statements.append(self.parse_statement())
-        print(self.statements)
+        #print(self.statements)
         return Program(self.statements)
         

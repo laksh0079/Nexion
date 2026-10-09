@@ -72,3 +72,11 @@ class DictLiteral:
         self.entries = entries
     def __repr__(self):
         return f"Entries: {self.entries}"
+    
+class SliceExpression:
+    def __init__(self, target, start=None, end=None):
+        self.target = target
+        self.start = start
+        self.end = end
+    def __repr__(self):
+        return f"Target: {self.target}, start: {self.start}, end: {self.end}"

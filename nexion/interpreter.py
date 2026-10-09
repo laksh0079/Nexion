@@ -1,7 +1,7 @@
 from AST.program import Program
 from AST.statements import LetStatement, AssignStatement, SayStatement, IfStatement, Block, Scope, WhileStatement, NextStatement, ExitStatement, Function, FunCall, ReturnStatement
 from AST.exceptions import NextSignal, ExitSignal, ReturnSignal, UnknownTypeError
-from AST.expressions import StringLiteral, NumberLiteral, Identifier, BinaryExpression, BooleanLiteral, UnaryExpression, NoneLiteral, ListLiteral, IndexExpression, IndexAssignment, DictLiteral
+from AST.expressions import StringLiteral, NumberLiteral, Identifier, BinaryExpression, BooleanLiteral, UnaryExpression, NoneLiteral, ListLiteral, IndexExpression, IndexAssignment, DictLiteral, SliceExpression
 from operators import OPERATOR_BEHAVIOUR, UNARY_BEHAVIOUR
 class Interpreter:
     def get_type(self, value):
@@ -43,7 +43,7 @@ class Interpreter:
                     self.functions[statement.name] = statement
     
     def validate_index(self, target, index):
-        if not self.get_type(target) in ["list", "dict"]:
+        if not self.get_type(target) in ["list", "dict", "string"]:
                 raise Exception(f"Runtime Error: '{self.get_type(target)}' is not indexable")
         if self.get_type(target) == "list":
             if not self.get_type(index) == "int":
@@ -53,7 +53,11 @@ class Interpreter:
         elif self.get_type(target) == "dict":
             if not self.get_type(index) in ["boolean", "int", "string"]:
                 raise Exception("Runtime Error: Dictionary key can only be of type string, int and boolean")
-            
+        elif self.get_type(target) == "string":
+            if not self.get_type(index) == "int":
+                raise Exception("Runtime Error: Index Can Only Be Of Type Int")
+            if not 0 <= index < len(target):
+                raise Exception("Runtime Error: Index Out of Range")
     
     
     def execute(self, node):
@@ -197,7 +201,7 @@ class Interpreter:
             index = self.evaluate(node.index)
             
             self.validate_index(target, index)
-            if self.get_type(target) == "list":
+            if self.get_type(target) in ["list", "string"]:
                 return target[index]
             elif self.get_type(target) == "dict":
                 if index not in target:
@@ -209,7 +213,24 @@ class Interpreter:
             index = self.evaluate(node.target.index)
             self.validate_index(target, index)
             target[index] = self.evaluate(node.value)
-            
+        elif type(node) is SliceExpression:
+            target = self.evaluate(node.target)
+            start = self.evaluate(node.start)
+            end = self.evaluate(node.end)
+            if self.get_type(target) not in ["list", "string"]:
+                raise Exception("Runtime Error: Index Slicing Can Only Be Done On Type: List or String")
+            try:
+                if start is None and end is None:
+                    return target[:]
+                elif start is None:
+                    return target[:end]
+                elif end is None:
+                    return target[start:]
+                else:
+                    return target[start:end]
+            except TypeError:
+                raise Exception("Runtime Error: Slice bounds must be integers")
+ 
     def run(self):
         self.index_functions(self.root)
         try:

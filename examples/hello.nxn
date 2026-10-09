@@ -1,7 +1,9 @@
-let a = [1,2,3];
-say(1 in a);
-say(4 in a);
-a = {"name": "xyz", "rollno": 3};
-say("name" in a);
-say("xyz" in a);
-say("rollno" in 1);
+let nums = [10, 20, 30, 40, 50];
+
+say(nums[1:4]);
+say(nums[:2]);
+say(nums[2:]);
+say(nums[:]);
+say(nums[-2:]);
+say(nums[4:1]);
+say(nums[2:100]);

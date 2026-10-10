@@ -1,6 +1,6 @@
 from AST.statements import LetStatement, AssignStatement, SayStatement, IfStatement, Block, WhileStatement, ExitStatement, NextStatement, Function, FunCall, ReturnStatement
 from AST.program import Program
-from AST.expressions import NumberLiteral, StringLiteral, Identifier, BinaryExpression, BooleanLiteral, UnaryExpression, NoneLiteral, ListLiteral, IndexExpression, IndexAssignment, DictLiteral, SliceExpression
+from AST.expressions import NumberLiteral, FloatLiteral, StringLiteral, Identifier, BinaryExpression, BooleanLiteral, UnaryExpression, NoneLiteral, ListLiteral, IndexExpression, IndexAssignment, DictLiteral, SliceExpression
 from operators import PRECEDENCE,BINARY_OPERATORS
 class Parser:
     def __init__(self, tokens):
@@ -11,6 +11,7 @@ class Parser:
             "LEFT_PAREN",
             "IDENTIFIER",
             "NUMBER",
+            "FLOAT",
             "STRING",
             "TRUE",
             "FALSE",
@@ -22,6 +23,7 @@ class Parser:
         ]
         self.valid_dict_keys = [
             "NUMBER",
+            "FLOAT"
             "STRING",
             "TRUE",
             "FALSE"
@@ -48,6 +50,10 @@ class Parser:
             value = self.current().value
             self.advance()
             expr = NumberLiteral(value)
+        elif self.expect("FLOAT"):
+            value = self.current().value
+            self.advance()
+            expr = FloatLiteral(value)
         elif self.expect("NOT"):
             self.advance()
             operand = self.parse_primary()

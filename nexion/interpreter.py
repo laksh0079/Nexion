@@ -1,7 +1,7 @@
 from AST.program import Program
 from AST.statements import LetStatement, AssignStatement, SayStatement, IfStatement, Block, Scope, WhileStatement, NextStatement, ExitStatement, Function, FunCall, ReturnStatement
 from AST.exceptions import NextSignal, ExitSignal, ReturnSignal
-from AST.expressions import StringLiteral, NumberLiteral, Identifier, BinaryExpression, BooleanLiteral, UnaryExpression, NoneLiteral, ListLiteral, IndexExpression, IndexAssignment, DictLiteral, SliceExpression
+from AST.expressions import StringLiteral, NumberLiteral, FloatLiteral, Identifier, BinaryExpression, BooleanLiteral, UnaryExpression, NoneLiteral, ListLiteral, IndexExpression, IndexAssignment, DictLiteral, SliceExpression
 from operators import OPERATOR_BEHAVIOUR, UNARY_BEHAVIOUR
 from stdlib import length, get_type, to_string
 class Interpreter:
@@ -135,6 +135,8 @@ class Interpreter:
             return node.string
         elif type(node) is NumberLiteral:
             return node.number
+        elif type(node) is FloatLiteral:
+            return node.value
         elif type(node) is Identifier:
             lookup_scope = self.current_scope
             while lookup_scope is not None:

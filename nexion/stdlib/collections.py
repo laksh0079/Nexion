@@ -10,7 +10,8 @@ def get_type(value):
             bool: "boolean",
             type(None): "none",
             list: "list",
-            dict: "dict"
+            dict: "dict",
+            float: "float"
         }
     try:
         return types[type(value)]

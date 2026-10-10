@@ -12,6 +12,11 @@ class NumberLiteral(Expressions):
     def __repr__(self):
         return f"Number: {self.number}"
 
+class FloatLiteral:
+    def __init__(self, value):
+        self.value = value
+    def __repr__(self):
+        return f"Float: {self.value}"
 
 class StringLiteral(Expressions):
     def __init__(self, string):

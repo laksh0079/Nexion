@@ -34,7 +34,8 @@ class Lexer:
         "_": "UNDERSCORE",
         "[": "LEFT_BRACKET",
         "]": "RIGHT_BRACKET",
-        ":": "COLON"
+        ":": "COLON",
+        ".": "DOT"
     }
     
     def __init__(self, source):
@@ -63,13 +64,18 @@ class Lexer:
     
     def scan_number(self):
         digits=""
-        while not self.is_eof() and (self.current().isdigit()):
+        while not self.is_eof() and (self.current().isdigit() or self.current() == "."):
+            if self.current() == "." and self.current() in digits:
+                raise Exception("Lexical Error: Floats can only have one decimal")
             digits+=self.current()
             self.advance()
         if not self.is_eof() and self.current().isalpha():
-            raise Exception("Lexical Error: Identifier cannor start with a digit.")
+            raise Exception("Lexical Error: Invalid character after numeric literal.")
         else:
-            self.tokens.append(Token("NUMBER", int(digits)))
+            if "." in digits:
+                self.tokens.append(Token("FLOAT", float(digits)))
+            else:
+                self.tokens.append(Token("NUMBER", int(digits)))
                 
                 
     def scan_symbols(self):
@@ -113,7 +119,7 @@ class Lexer:
                 self.advance()
             elif self.current().isalpha() or self.current() == "_":
                 self.scan_identifier()
-            elif self.current().isdigit():
+            elif self.current().isdigit() or (self.current() == "." and self.peek().isdigit()):
                 self.scan_number()
             elif self.current() == '"':
                 self.scan_string()
